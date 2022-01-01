@@ -16,8 +16,9 @@ jobs:
           node-version: '16.x'
           registry-url: 'https://registry.npmjs.org'
       - name: Test Firebase access
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT }}
         run: |
-          echo $FIREBASE_PRODUCTION_SERVICE_ACCOUNT
           npm install
           npm run script
       # - name: Get current date and timestamp
