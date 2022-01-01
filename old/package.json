@@ -1,0 +1,35 @@
+{
+  "name": "deployment",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "script": "ts-node src/script.ts",
+    "script2": "node --loader ts-node/esm --experimental-specifier-resolution=node src/script.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cougargrades/deployment.git"
+  },
+  "author": "Austin Jackson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cougargrades/deployment/issues"
+  },
+  "homepage": "https://github.com/cougargrades/deployment#readme",
+  "devDependencies": {
+    "@types/node": "^17.0.6",
+    "@types/tar": "^6.1.1",
+    "ts-node": "^10.4.0",
+    "tslib": "^2.3.1",
+    "typescript": "^4.5.4"
+  },
+  "dependencies": {
+    "firebase-admin": "^10.0.1",
+    "got": "^12.0.0",
+    "node-fetch": "^3.1.0",
+    "tar": "^6.1.11"
+  }
+}

@@ -1,29 +1,28 @@
 {
-  // This is an alias to @tsconfig/node16: https://github.com/tsconfig/bases
-  "extends": "ts-node/node16/tsconfig.json",
-
-  // Most ts-node options can be specified here using their programmatic names.
-  "ts-node": {
-    // It is faster to skip typechecking.
-    // Remove if you want ts-node to do typechecking.
-    "transpileOnly": true,
-
-    "files": true,
-
-    "compilerOptions": {
-      // compilerOptions specified here will override those declared below,
-      // but *only* in ts-node.  Useful if you want ts-node and tsc to use
-      // different options with a single tsconfig.json.
-    }
-  },
   "compilerOptions": {
-    //"module": "CommonJS"
-    "target": "es2020",
-    "module": "esnext",
-    "moduleResolution": "node"
-    // typescript options here
-    //"resolveJsonModule": true,               // json imports
-    //"esModuleInterop": true,                 // import common modules as ES6 Modules
-    // "allowSyntheticDefaultImports": true,
-  }
+    "allowSyntheticDefaultImports": false,
+    "experimentalDecorators": true,
+    "lib": [
+      "es2015",
+      "scripthost",
+      "es2015.promise",
+      "es2015.generator",
+      "es2015.iterable",
+      "dom"
+    ],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noImplicitAny": false,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "sourceMap": false,
+    "inlineSourceMap": true,
+    "outDir": "build",
+    "strict": false,
+    "target": "es5",
+    "declaration": true,
+    "declarationDir": "build/types"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }
