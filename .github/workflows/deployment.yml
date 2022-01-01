@@ -1,0 +1,102 @@
+on: 
+  workflow_dispatch: ~
+
+name: Deployment
+
+jobs:
+  deployment:
+    name: Deployment
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Test Firebase access
+        run: |
+          npm run script
+      # - name: Get current date and timestamp
+      #   id: timestamp
+      #   run: | 
+      #     echo "::set-output name=timestamp::$(date +'%Y-%m-%d-%H%M%S')"
+      #     echo "::set-output name=timestamptag::$(date +'%Y-%m-%d-%H%M%S')"
+      #     echo "::set-output name=npmtag::$(date +'%Y%m%d%H%M%S')"
+      # - name: Create Release
+      #   id: create_release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      #   with:
+      #     tag_name: "${{ steps.timestamp.outputs.timestamptag }}"
+      #     #release_name: "publicdata-bundle-${{ steps.makebundle.outputs.tarname }}"
+      #     draft: false
+      #     prerelease: false
+      # - name: Make test bundle
+      #   id: maketestbundle
+      #   run: |
+      #     pip install -r bundler/requirements.txt
+      #     mkdir -p exports/
+      #     VAR=$PWD/exports/publicdata-testbundle-summer2020-$(date +'%Y-%m-%d-%H%M%S').tar.gz
+      #     python bundler/bundle.py -o "$VAR" --testbundle "IR06861 Summer 2020 Grade distribution (S+NCR).csv"
+      #     echo "::set-output name=tarloc::$VAR"
+      #     echo "::set-output name=tarname::$(basename $VAR)"
+      # - name: Upload Release Asset (test bundle)
+      #   id: upload-release-asset
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+      #     asset_path: "${{ steps.maketestbundle.outputs.tarloc }}"
+      #     asset_name: "${{ steps.maketestbundle.outputs.tarname }}"
+      #     asset_content_type: application/gzip
+      # - name: Make bundle
+      #   id: makebundle
+      #   run: |
+      #     pip install -r bundler/requirements.txt
+      #     mkdir -p exports/
+      #     VAR=$PWD/exports/publicdata-bundle-$(date +'%Y-%m-%d-%H%M%S').tar.gz
+      #     ALT=$PWD/npm/bundle
+      #     VAR_TEMP=$(dirname $VAR)/$(basename $VAR .gz)
+      #     python bundler/bundle.py --skiprmtree -o "$VAR"
+      #     mv $VAR_TEMP/* $ALT
+      #     echo "::set-output name=tarloc::$VAR"
+      #     echo "::set-output name=tarname::$(basename $VAR)"
+      # - name: Upload Release Asset
+      #   id: upload-release-asset2
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+      #     asset_path: "${{ steps.makebundle.outputs.tarloc }}"
+      #     asset_name: "${{ steps.makebundle.outputs.tarname }}"
+      #     asset_content_type: application/gzip
+      # # Publish to npm
+      # - uses: actions/setup-node@v2
+      #   with:
+      #     node-version: '15.x'
+      #     registry-url: 'https://registry.npmjs.org'
+      # - name: Publish to NPM
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+      #   run: |
+      #     cd npm
+      #     node repackage.js ${{ steps.timestamp.outputs.npmtag }}
+      #     npm publish --access public
+      # # Setup .npmrc file to publish to GitHub Packages
+      # - uses: actions/setup-node@v2
+      #   with:
+      #     node-version: '15.x'
+      #     registry-url: 'https://npm.pkg.github.com'
+      # # Publish to GitHub Packages
+      # - name: Publish to GitHub Packages
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     cd npm
+      #     node repackage.js ${{ steps.timestamp.outputs.npmtag }}
+      #     npm publish
