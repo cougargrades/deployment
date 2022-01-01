@@ -17,6 +17,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Test Firebase access
         run: |
+          npm install
           npm run script
       # - name: Get current date and timestamp
       #   id: timestamp
