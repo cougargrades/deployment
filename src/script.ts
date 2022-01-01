@@ -1,24 +1,11 @@
-import { firebase } from './_firebaseHelper'
+import { downloadFile, extractBundle } from './_bundleHelper';
+import { deleteCollection, firebase } from './_firebaseHelper'
 
-export const sum = (a: number, b: number) => {
-  if ('development' === process.env.NODE_ENV) {
-    console.log('boop');
-  }
-  return a + b;
-};
+async function main() {
+  await downloadFile('https://github.com/cougargrades/publicdata/releases/latest/download/publicdata-testbundle-summer2020.tar.gz', 'bundle.tar.gz')
+  //await extractBundle('bundle.tar.gz', 'test')
 
-function listCollection(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    firebase.firestore().collection('users').stream()
-    .on('data', (documentSnapshot) => {
-      console.log(`Found document with name '${documentSnapshot.id}'`);
-    }).on('end', () => {
-      console.log('End of documents');
-      resolve()
-    });
-  });
+  await deleteCollection('groups')
 }
 
-sum(2,4)
-listCollection();
-console.log('hello world!')
+main();

@@ -17,6 +17,13 @@
     }
   },
   "compilerOptions": {
+    //"module": "CommonJS"
+    "target": "es2020",
+    "module": "esnext",
+    "moduleResolution": "node"
     // typescript options here
+    //"resolveJsonModule": true,               // json imports
+    //"esModuleInterop": true,                 // import common modules as ES6 Modules
+    // "allowSyntheticDefaultImports": true,
   }
 }
