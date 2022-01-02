@@ -1,5 +1,10 @@
 on: 
-  workflow_dispatch: ~
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "What environment are we deploying to? Enter: 'Production' or 'Preview'."
+        required: true
+        default: 'Production'
 
 name: Deployment
 
@@ -23,7 +28,7 @@ jobs:
 
       - name: Test Firebase access
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ (github.event.inputs.environment == 'Production' && secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT) || secrets.FIREBASE_PREVIEW_SERVICE_ACCOUNT }}
         run: node build/testAccess.js
 
       - name: Download latest public data bundle
