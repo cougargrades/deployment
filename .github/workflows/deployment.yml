@@ -32,10 +32,10 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT }}
         run: node build/deleteCollections.js
 
-      # - name: Upload records from CSV data
-      #   env:
-      #     FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT }}
-      #   run: node build/uploadRecords.js
+      - name: Upload records from CSV data
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT }}
+        run: node build/uploadRecords.js
 
       # - name: Get current date and timestamp
       #   id: timestamp
