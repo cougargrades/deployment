@@ -1,5 +1,5 @@
-import { downloadFile, extractBundle } from './_bundleHelper'
-import { deleteCollection, firebase } from './_firebaseHelper'
+import { downloadFile, extractBundle } from './_bundleHelper.js'
+import { deleteCollection, firebase } from './_firebaseHelper.js'
 
 async function main() {
   await downloadFile(

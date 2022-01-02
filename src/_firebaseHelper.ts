@@ -1,8 +1,11 @@
-import * as admin from 'firebase-admin'
+import fs from 'fs'
+import admin from 'firebase-admin'
+
+export const fakeRequire = (filePath: string): any => JSON.parse(fs.readFileSync(new URL(filePath, import.meta.url), { encoding: 'utf8' }))
 
 const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
   ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-  : require('../.secret/firebase-adminsdk.json')
+  : fakeRequire('../.secret/firebase-adminsdk.json');
 
 export const firebase = !admin.apps.length
   ? admin.initializeApp({
