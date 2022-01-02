@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@cougargrades/types": "^0.0.88",
+    "csv-parse": "^5.0.4",
     "firebase-admin": "^10.0.1",
     "got": "^12.0.0",
     "node-fetch": "^3.1.0",

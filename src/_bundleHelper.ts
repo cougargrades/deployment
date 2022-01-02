@@ -1,9 +1,12 @@
-import { createWriteStream, mkdirSync } from 'fs'
+import { createWriteStream, mkdirSync, readFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { pipeline } from 'stream'
 import { promisify } from 'util'
 import got from 'got'
 import tar from 'tar'
+import { parse } from 'csv-parse';
+import type { GradeDistributionCSVRow } from '@cougargrades/types/dist/GradeDistributionCSVRow.js'
+import { GradeDistributionCSVRow as GDR } from '@cougargrades/types'
 
 export async function downloadFile(url: string, path: string) {
   mkdirSync(dirname(path), { recursive: true });
@@ -21,4 +24,18 @@ export async function extractBundle(tarFile: string, outputDirectory: string) {
     C: outputDirectory
   })
   console.log(`Extraction complete for ${tarFile}`)
+}
+
+export async function parseCSV(csvFile: string): Promise<GradeDistributionCSVRow[]> {
+  const parser = parse(readFileSync(csvFile), {
+    columns: true
+  });
+  const records: GradeDistributionCSVRow[] = [];
+  for await (const record of parser) {
+    const temp = GDR.tryFromRaw(record);
+    if(temp !== null) {
+      records.push(temp);
+    }
+  }
+  return records;
 }

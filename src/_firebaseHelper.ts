@@ -37,21 +37,3 @@ export async function deleteCollection(collectionPath: string): Promise<void> {
   console.log(`End of documents (${documents.length} deleted)`)
 }
 
-// export function deleteCollection(collectionPath: string): Promise<void> {
-//   let count = 0;
-//   return new Promise((resolve, reject) => {
-
-//     console.log(`Deleting collection ${collectionPath}`)
-//     firebase.firestore().collection(collectionPath).
-//     firebase.firestore().collection(collectionPath).stream()
-//     .on('data', async (snap: FirebaseFirestore.QueryDocumentSnapshot) => {
-//       await snap.ref.delete()
-//       console.log(`Deleted ${snap.ref.path}`)
-//       ++count;
-//     }).on('end', () => {
-//       console.log(`End of documents (${count} deleted)`);
-//       resolve()
-//     })
-//     .on('error', (...args) => reject(...args));
-//   });
-// }
