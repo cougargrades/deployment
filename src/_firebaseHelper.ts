@@ -1,6 +1,8 @@
 import fs from 'fs'
+import { promisify } from 'util'
 import admin from 'firebase-admin'
-import { AsyncSemaphore } from '@cougargrades/types';
+import { AsyncSemaphore, is } from '@cougargrades/types'
+import { executePatchFile } from '@cougargrades/types/dist/PatchfileUtil.js'
 
 export const fakeRequire = (filePath: string): any => JSON.parse(fs.readFileSync(new URL(filePath, import.meta.url), { encoding: 'utf8' }))
 
@@ -43,5 +45,22 @@ export async function deleteCollection(collectionPath: string): Promise<void> {
   }
   await semaphore.awaitTerminate();
   console.log(`End of documents (${documents.length} deleted)`)
+}
+
+export async function processPatchfile(file: string): Promise<void> {
+  const shortName = file.split('/').reverse()[0]
+  const readFile = promisify(fs.readFile)
+  try {
+    const contents = await readFile(file, { encoding: 'utf8' });
+    const decoded = JSON.parse(contents);
+    if(is.Patchfile(decoded)) {
+      //console.log(`- started executing ${shortName}`)
+      await executePatchFile(firebase.firestore(), admin.firestore.FieldValue as any, decoded);
+      console.log(`- finished executing ${shortName}`)
+    }
+  }
+  catch(err) {
+    console.error(`Failed to process patchfile ${shortName}:`,err);
+  }
 }
 
