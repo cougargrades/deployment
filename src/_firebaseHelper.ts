@@ -13,21 +13,14 @@ export const firebase = !admin.apps.length
     })
   : admin.app()
 
-export function listCollection(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    firebase
-      .firestore()
-      .collection('users')
-      .stream()
-      .on('data', documentSnapshot => {
-        console.log(`Found document with name '${documentSnapshot.id}'`)
-      })
-      .on('end', () => {
-        console.log('End of documents')
-        resolve()
-      })
-      .on('error', (...args) => reject(...args))
-  })
+export async function listCollection(collectionPath: string): Promise<void> {
+  const documents = await firebase
+    .firestore()
+    .collection(collectionPath)
+    .listDocuments();
+  for(let ref of documents) {
+    console.log(`Found document with name '${ref.id}'`)
+  }
 }
 
 export async function deleteCollection(collectionPath: string): Promise<void> {

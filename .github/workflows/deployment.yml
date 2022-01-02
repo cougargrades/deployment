@@ -22,9 +22,14 @@ jobs:
       - name: Test Firebase access
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT }}
-        run: |
-          node build/script.js
-          
+        run: node build/testAccess.js
+
+      - name: Download latest public data bundle
+        run: node build/downloadBundle.js
+
+      - name: Delete existing collections
+        run: node build/deleteCollections.js
+
       # - name: Get current date and timestamp
       #   id: timestamp
       #   run: | 
