@@ -12,6 +12,8 @@ jobs:
   deployment:
     name: Deployment
     runs-on: self-hosted
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ (github.event.inputs.environment == 'Production' && secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT) || secrets.FIREBASE_PREVIEW_SERVICE_ACCOUNT }}
     steps:
       - name: Checkout code
         uses: actions/checkout@master
@@ -27,24 +29,16 @@ jobs:
           npm run build
 
       - name: Test Firebase access
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ (github.event.inputs.environment == 'Production' && secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT) || secrets.FIREBASE_PREVIEW_SERVICE_ACCOUNT }}
         run: node build/testAccess.js
 
       - name: Download latest public data bundle
         run: node build/downloadBundle.js
 
       - name: Delete existing collections
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT }}
         run: node build/deleteCollections.js
 
       - name: Upload records from CSV data
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT }}
         run: node build/uploadRecords.js
 
       - name: Execute patchfiles
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT }}
         run: node build/executePatchfiles.js
