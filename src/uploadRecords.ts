@@ -1,10 +1,8 @@
 import { firebase } from './_firebaseHelper.js';
 import { parseCSV } from './_bundleHelper.js';
 import { shuffle } from './_shuffle.js';
-import { firestore } from 'firebase-admin';
 
 const records = await parseCSV('tmp/test/edu.uh.grade_distribution/records.csv');
-console.log(records)
 
 if(records.length === 0) {
   console.error('This CSV file is empty! Exiting.')
