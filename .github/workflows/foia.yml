@@ -1,9 +1,9 @@
 
 on:
   workflow_dispatch: ~
-  schedule:
+  #schedule:
     # end of Spring,Summer,Fall semester
-    - cron: '0 0 30 5,8,12 *'
+  #  - cron: '0 0 30 5,8,12 *'
     # end of Spring semester
     #- cron: '0 0 30 5 *'
     # end of Summer semester
