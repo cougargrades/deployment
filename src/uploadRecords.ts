@@ -19,11 +19,15 @@ console.log('CSV records have been parsed and shuffled');
 // current amount pending
 let concurrencyCount = 0;
 // max number to do in parallel
-const concurrencyLimit = 8;
+const concurrencyLimit = 2;
 // number of rows processed so far
 let totalProcessed = 0;
+// dataset size
+const initialRecordsCount = records.length;
 // firebase document IDs of pending uploads
 let pendingUploads: string[] = [];
+// termination scheduled
+let terminationScheduled = false;
 
 // TODO: completely untested
 // adapted from: https://github.com/cougargrades/web/blob/e0a245f47c4f69260ffdc4954d76738c655f11bc/components/uploader/uploader.tsx#L218
@@ -48,7 +52,7 @@ const unsubscribe = firebase.firestore().collection('upload_queue').onSnapshot(s
 
   // computes number of times we can add to the current queue
   const can_upload_next = concurrencyLimit - concurrencyCount;
-  console.log('can_upload_next: ', can_upload_next);
+  console.log(`[ ${totalProcessed} / ${initialRecordsCount}] concurrencyCount: ${concurrencyCount}, can_upload_next: ${can_upload_next}`)
 
   // if there is room in the upload_queue
   if(can_upload_next > 0) {
@@ -57,13 +61,18 @@ const unsubscribe = firebase.firestore().collection('upload_queue').onSnapshot(s
       // actually do the firestore upload
       const popped = records.pop();
       if(popped !== undefined) {
-        firebase.firestore().collection('upload_queue').doc().set(popped)//.then(e => console.log(''))
+        firebase.firestore().collection('upload_queue').doc().set(popped).then(e => { if(terminationScheduled) console.log('record barely made the cut') })
       }
     }
     else {
       // unsubscribe to the event listener and attempt to terminate the program
-      unsubscribe();
-      firebase.delete().then(e => console.log('firebase terminated'))
+      // give a 30 second grace period for snapshot listeners and document uploads to finalize
+      terminationScheduled = true;
+      console.log('termination has been scheduled')
+      setTimeout(() => {
+        unsubscribe();
+        firebase.delete().then(e => console.log('firebase terminated'))
+      }, 30_000)
     }
   }
 })
