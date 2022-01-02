@@ -6,7 +6,7 @@ async function main() {
     'https://github.com/cougargrades/publicdata/releases/latest/download/publicdata-testbundle-summer2020.tar.gz',
     'bundle.tar.gz'
   )
-  //await extractBundle('bundle.tar.gz', 'test')
+  await extractBundle('bundle.tar.gz', 'test')
 
   await deleteCollection('groups')
 }
