@@ -28,6 +28,8 @@ jobs:
         run: node build/downloadBundle.js
 
       - name: Delete existing collections
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT }}
         run: node build/deleteCollections.js
 
       # - name: Get current date and timestamp
