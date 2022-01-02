@@ -1,11 +1,12 @@
 import { createWriteStream, mkdirSync } from 'fs'
-import { join } from 'path'
+import { dirname, join } from 'path'
 import { pipeline } from 'stream'
 import { promisify } from 'util'
 import got from 'got'
 import tar from 'tar'
 
 export async function downloadFile(url: string, path: string) {
+  mkdirSync(dirname(path), { recursive: true });
   console.log(`Downloading ${url} to ${join(process.cwd(), path)}`)
   const streamPipeline = promisify(pipeline)
   await streamPipeline(got.stream(url), createWriteStream(path))

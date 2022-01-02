@@ -1,14 +1,10 @@
 import { downloadFile, extractBundle } from './_bundleHelper.js'
-import { deleteCollection, firebase } from './_firebaseHelper.js'
+import { deleteCollection } from './_firebaseHelper.js'
 
-async function main() {
-  await downloadFile(
-    'https://github.com/cougargrades/publicdata/releases/latest/download/publicdata-testbundle-summer2020.tar.gz',
-    'bundle.tar.gz'
-  )
-  await extractBundle('bundle.tar.gz', 'test')
+await downloadFile(
+  'https://github.com/cougargrades/publicdata/releases/latest/download/publicdata-testbundle-summer2020.tar.gz',
+  'tmp/bundle.tar.gz'
+)
+await extractBundle('tmp/bundle.tar.gz', 'tmp/test')
 
-  await deleteCollection('groups')
-}
-
-main()
+await deleteCollection('groups')
