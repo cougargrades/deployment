@@ -69,7 +69,7 @@ const unsubscribe = firebase.firestore().collection('upload_queue').onSnapshot(s
       console.log('termination has been scheduled')
       setTimeout(() => {
         unsubscribe();
-        firebase.delete().then(e => console.log('firebase terminated'))
+        //firebase.delete().then(e => console.log('firebase terminated'))
       }, 30_000)
     }
   }
