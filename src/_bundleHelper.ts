@@ -1,4 +1,4 @@
-import { createWriteStream, mkdirSync, readdirSync, readFileSync } from 'fs'
+import { createWriteStream, mkdirSync, readFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { pipeline } from 'stream'
 import { promisify } from 'util'
@@ -8,6 +8,7 @@ import { parse } from 'csv-parse'
 import type { GradeDistributionCSVRow } from '@cougargrades/types/dist/GradeDistributionCSVRow.js'
 import { GradeDistributionCSVRow as GDR } from '@cougargrades/types'
 import _glob from 'glob'
+import _rimraf from 'rimraf'
 
 export async function downloadFile(url: string, path: string) {
   mkdirSync(dirname(path), { recursive: true });
@@ -50,4 +51,15 @@ export async function getPatchFiles(directory: string): Promise<[string[], numbe
     .split('-') // [ "patch", "0", "groupdefaults", "1617828381961927207.json" ]
     [1] // access phase
   )];
+}
+
+export function rimraf(path: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    _rimraf(path, err => {
+      if (err === null || err === undefined)
+        resolve();
+      else
+        reject(err);
+    })
+  });
 }
