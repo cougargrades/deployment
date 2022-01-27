@@ -77,8 +77,9 @@ jobs:
           # Required mail subject:
           subject: FOIA Request (${{ steps.timestamp.outputs.datestamp }})
           # Required recipients' addresses:
-          to: austinjckson@gmail.com
-          #to: publicinfo@uh.edu,austinjckson@gmail.com
+          #to: austinjckson@gmail.com
+          to: publicinfo@uh.edu
+          cc: austinjckson@gmail.com
           # Required sender full name (address can be skipped):
           from: Austin Jackson
           # Optional whether this connection use TLS (default is true if server_port is 465)
