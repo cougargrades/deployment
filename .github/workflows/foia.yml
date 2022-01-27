@@ -59,16 +59,21 @@ jobs:
             echo "::set-output name=calculatedyear::$CURRENTYEAR"
           fi
       - name: Send mail
-        uses: dawidd6/action-send-mail@v3
+        uses: cougargrades/action-send-mail@v4
         with:
           # Required mail server address:
           server_address: smtp.gmail.com
           # Required mail server port:
           server_port: 465
           # Optional (recommended): mail server username:
-          username: ${{secrets.MAIL_USERNAME}}
+          #username: ${{secrets.MAIL_USERNAME}}
           # Optional (recommended) mail server password:
-          password: ${{secrets.MAIL_PASSWORD}}
+          #password: ${{secrets.MAIL_PASSWORD}}
+          # oauth stuff please work
+          oauth_user: ${{ secrets.MAIL_USERNAME }}
+          oauth_client_id: ${{ secrets.MAIL_OAUTH_CLIENT_ID }}
+          oauth_client_secret: ${{ secrets.MAIL_OAUTH_CLIENT_SECRET }}
+          oauth_refresh_token: ${{ secrets.MAIL_OAUTH_REFRESH_TOKEN }}
           # Required mail subject:
           subject: FOIA Request (${{ steps.timestamp.outputs.datestamp }})
           # Required recipients' addresses:
@@ -95,6 +100,6 @@ jobs:
             Please notify me of any expenses prior to incurring them.
 
             Thank you,
-            
+
             Austin Jackson
           convert_markdown: true
