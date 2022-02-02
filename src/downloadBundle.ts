@@ -4,8 +4,8 @@ import { downloadFile, extractBundle, rimraf } from './_bundleHelper.js';
 await rimraf('tmp')
 
 await downloadFile(
-  'https://github.com/cougargrades/publicdata/releases/latest/download/publicdata-testbundle-summer2020.tar.gz',
-  //'https://github.com/cougargrades/publicdata/releases/latest/download/publicdata-bundle.tar.gz',
+  //'https://github.com/cougargrades/publicdata/releases/latest/download/publicdata-testbundle-summer2020.tar.gz',
+  'https://github.com/cougargrades/publicdata/releases/latest/download/publicdata-bundle.tar.gz',
   'tmp/bundle.tar.gz'
 )
 
