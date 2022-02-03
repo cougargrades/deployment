@@ -2,9 +2,13 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "What environment are we deploying to? Enter: 'Production' or 'Preview'."
+        description: "What environment are we deploying to?"
         required: true
         default: 'Production'
+        type: choice
+        options: 
+        - Production
+        - Preview
 
 name: Deployment
 
@@ -12,6 +16,8 @@ jobs:
   deployment:
     name: Deployment
     runs-on: self-hosted
+    # 24 hours in minutes
+    timeout-minutes: 1440
     env:
       FIREBASE_SERVICE_ACCOUNT: ${{ (github.event.inputs.environment == 'Production' && secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT) || secrets.FIREBASE_PREVIEW_SERVICE_ACCOUNT }}
     steps:
