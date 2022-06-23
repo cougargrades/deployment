@@ -9,6 +9,14 @@ on:
         options: 
         - Production
         - Preview
+      batch_processing_mode:
+        description: "How should the deployment scripts run?"
+        required: true
+        default: 'Concurrent'
+        type: choice
+        options: 
+        - Concurrent
+        - Sequential
 
 name: Deployment
 
@@ -17,9 +25,12 @@ jobs:
     name: Deployment
     runs-on: self-hosted
     # 24 hours in minutes
-    timeout-minutes: 1440
+    #timeout-minutes: 1440
+    # 72 hours in minutes
+    timeout-minutes: 4320
     env:
       FIREBASE_SERVICE_ACCOUNT: ${{ (github.event.inputs.environment == 'Production' && secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT) || secrets.FIREBASE_PREVIEW_SERVICE_ACCOUNT }}
+      BATCH_PROCESSING_MODE: ${{ github.event.inputs.batch_processing_mode }}
     steps:
       - name: Checkout code
         uses: actions/checkout@master
@@ -43,8 +54,13 @@ jobs:
       - name: Delete existing collections
         run: node build/deleteCollections.js
 
-      - name: Upload records from CSV data
+      - name: Upload records from CSV data (Concurrent)
+        if: ${{ (github.event.inputs.batch_processing_mode == 'Concurrent' }}
         run: node build/uploadRecords.js
+      
+      - name: Upload records from CSV data (Sequential)
+        if: ${{ (github.event.inputs.batch_processing_mode == 'Sequential' }}
+        run: node build/uploadRecordsSequential.js
 
       - name: Execute patchfiles
         run: node build/executePatchfiles.js

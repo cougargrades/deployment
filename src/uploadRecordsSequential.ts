@@ -1,0 +1,443 @@
+import { FieldValue, firebase } from './_firebaseHelper.js';
+import { parseCSV } from './_bundleHelper.js';
+import { shuffle } from './_shuffle.js';
+import { Average, Course, GPA, GradeDistributionCSVRow as GDR, Group, Instructor, Section, StandardDeviation, Util } from '@cougargrades/types'
+import { GradeDistributionCSVRow } from '@cougargrades/types/dist/GradeDistributionCSVRow';
+import { getCoreCurriculumDocRefs } from './_dataHelper';
+
+const records = await parseCSV('tmp/test/edu.uh.grade_distribution/records.csv');
+
+if(records.length === 0) {
+  console.error('This CSV file is empty! Exiting.')
+  process.exit(1);
+}
+
+// mutates the records array in-place
+// shuffles the records so that we prevent similar courses/sections from being adjacent
+shuffle(records);
+console.log('CSV records have been parsed and shuffled');
+
+// Pasted from @cougargrades/api > whenUploadQueueAdded
+async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
+  const db = firebase.firestore();
+
+  const transaction = db.runTransaction(async (txn) => {
+    // create all references (to locations that may not exist)
+    const courseRef = db
+      .collection('catalog')
+      .doc(GDR.getCourseMoniker(record));
+    const sectionRef = db
+      .collection('sections')
+      .doc(GDR.getSectionMoniker(record));
+    const instructorRef = db
+      .collection('instructors')
+      .doc(GDR.getInstructorMoniker(record));
+    const groupRef = db
+      .collection('groups')
+      .doc(GDR.getGroupMoniker(record));
+    const catalogMetaRef = db.collection('meta').doc('catalog');
+    const coreCurriculumRefs = getCoreCurriculumDocRefs(GDR.getCourseMoniker(record));
+
+    // perform all reads
+    const courseSnap = await txn.get(courseRef);
+    const sectionSnap = await txn.get(sectionRef);
+    const instructorSnap = await txn.get(instructorRef);
+    const groupSnap = await txn.get(groupRef);
+    const catalogMetaSnap = await txn.get(catalogMetaRef);
+
+    // bonus reads: check which core curriculum groups exist
+    const coreCurriculumIdsThatExist: string[] = [];
+    // verify that these groups exist
+    for(const coreCourseRef of coreCurriculumRefs) {
+      // do a database get
+      const snap = await txn.get(coreCourseRef)
+      // if it exists, save the ID
+      if(snap.exists) coreCurriculumIdsThatExist.push(snap.id);
+    }
+
+    // denoted variables to cache the result from the snapshot
+    let courseData: Course;
+    let sectionData: Section;
+    let instructorData: Instructor;
+    //let groupData: Group;
+    /**
+     * Variables to hold the updates we're going to compose, then send off
+     * 
+     * When updating these partials, a special type will be used because 
+     * we will address individual fields with dotted-strings due
+     * to how Firestore processes updates.
+     * 
+     * See: https://firebase.google.com/docs/reference/js/firebase.firestore.Transaction#data:-updatedata
+     */
+    let courseToUpdate: Partial<Course> & { [key: string]: any } = {};
+    let sectionToUpdate: Partial<Section> & { [key: string]: any } = {};
+    let instructorToUpdate: Partial<Instructor> & { [key: string]: any } = {};
+    let groupToUpdate: Partial<Group> & { [key: string]: any } = {};
+
+    /**
+     * ----------------
+     * Check Firestore for existence of all the things and set defaults.
+     * 
+     * Default values (provided by @cougargrades/types) CANNOT contain 
+     * Firestore document references due to the nature of how the 
+     * Firestore SDK works. Because of that, we will update those
+     * fields later.
+     * ----------------
+     */
+
+    // if the catalog meta doesn't exist
+    if (!catalogMetaSnap.exists) {
+      // create catalog meta with default values (current course)
+      await txn.set(catalogMetaRef, {
+        latestTerm: record.TERM,
+      });
+    } else {
+      // if the catalog meta already exists, compare its term to the proposed term
+      if (Util.termCode(record.TERM) > catalogMetaSnap.data()!.latestTerm) {
+        // update the "latestTerm" value
+        await txn.update(catalogMetaRef, {
+          latestTerm: Util.termCode(record.TERM),
+        });
+      }
+    }
+
+    // if course doesn't exist
+    if (!courseSnap.exists) {
+      // create default course with record data
+      await txn.set(courseRef, GDR.toCourse(record));
+      courseData = GDR.toCourse(record);
+    } else {
+      // if course already exists
+      // cache real course data for use in this trigger
+      courseData = courseSnap.data() as Course;
+    }
+
+    // if section doesn't exist
+    if (!sectionSnap.exists) {
+      // create default section with record data
+      await txn.set(sectionRef, GDR.toSection(record));
+      sectionData = GDR.toSection(record);
+    } else {
+      sectionData = sectionSnap.data() as Section;
+    }
+
+    // if instructor doesn't exist
+    if (!instructorSnap.exists) {
+      // create default instructor with record data
+      await txn.set(instructorRef, GDR.toInstructor(record));
+      instructorData = GDR.toInstructor(record);
+    } else {
+      // if instructor already exists
+      // save instructor course data
+      instructorData = instructorSnap.data() as Instructor;
+    }
+
+    // if group doesn't exist
+    if (!groupSnap.exists) {
+      // create default group with record data
+      await txn.set(groupRef, GDR.toGroup(record));
+      //groupData = GDR.toGroup(record);
+    }
+    else {
+      // if group already exists
+      // save group data
+      //groupData = groupSnap.data() as Group;
+    }
+
+    /**
+     * ----------------
+     * Now that defaults are set, we're going to update all the references set between each document.
+     * These references can't be set by @cougargrades/types (see above why), so we have to do it here.
+     * ----------------
+     */
+
+    // update course to include include instructors
+    courseToUpdate = {
+      instructors: FieldValue.arrayUnion(instructorRef) as any,
+      sections: FieldValue.arrayUnion(sectionRef) as any,
+      groups: FieldValue.arrayUnion(groupRef) as any,
+      // include already added fields
+      ...courseToUpdate
+    };
+
+    // update section to include the instructor submitted
+    // arrayUnion prevents a duplicate
+    sectionToUpdate = {
+      instructorNames: FieldValue.arrayUnion({
+        firstName: record.INSTR_FIRST_NAME,
+        lastName: record.INSTR_LAST_NAME,
+      }) as any,
+      instructors: FieldValue.arrayUnion(instructorRef) as any,
+      // include already added fields
+      ...sectionToUpdate
+    };
+
+    instructorToUpdate = {
+      courses: FieldValue.arrayUnion(courseRef) as any,
+      sections: FieldValue.arrayUnion(sectionRef) as any,
+      // include already added fields
+      ...instructorToUpdate
+    };
+
+    groupToUpdate = {
+      courses: FieldValue.arrayUnion(courseRef) as any,
+      sections: FieldValue.arrayUnion(sectionRef) as any,
+      // include already added fields
+      ...groupToUpdate
+    };
+
+    /**
+     * ----------------
+     * Update GPA stuff
+     * ----------------
+     */
+
+    // Course
+    // if the section doesn't exist, then we want to include this data in our Course calculation
+    if (!sectionSnap.exists) {
+
+      /**
+       * @cougargrades/types will initialize the Course.GPA field, 
+       * so we have to be careful not to overwrite our running total
+       * with the starting values of just one.
+       * 
+       * If the course already exists, we can confidently say that
+       * the GPA information inside of courseData is the 
+       * running total and NOT the values of just this record.
+       */
+      if (courseSnap.exists) {
+        // check if record has missing AVG
+        if (record.AVG_GPA !== null) {
+          // include in GPA
+          GPA.include(courseData.GPA, record.AVG_GPA);
+
+          // stage our updates
+          courseToUpdate = {
+            'GPA._average.n': courseData.GPA._average.n,
+            'GPA._average.sum': courseData.GPA._average.sum,
+            'GPA.average': Average.value(courseData.GPA._average),
+            'GPA._standardDeviation.n': courseData.GPA._standardDeviation.n,
+            'GPA._standardDeviation.delta': courseData.GPA._standardDeviation.delta,
+            'GPA._standardDeviation.mean': courseData.GPA._standardDeviation.mean,
+            'GPA._standardDeviation.M2': courseData.GPA._standardDeviation.M2,
+            'GPA._standardDeviation.ddof': courseData.GPA._standardDeviation.ddof,
+            'GPA.standardDeviation': StandardDeviation.value(courseData.GPA._standardDeviation,),
+            'GPA._mmr.maximum': courseData.GPA._mmr.maximum,
+            'GPA._mmr.minimum': courseData.GPA._mmr.minimum,
+            'GPA._mmr.range': courseData.GPA._mmr.range,
+            'GPA.maximum': courseData.GPA._mmr.maximum,
+            'GPA.minimum': courseData.GPA._mmr.minimum,
+            'GPA.range': courseData.GPA._mmr.range,
+            ...courseToUpdate
+          };
+        }
+      }
+    }
+
+    // Instructor
+    /**
+     * In premise, we want to include the GPA calculation if the provided 
+     * Instructor ISN'T part of the existing known instructors. We don't
+     * want to count a section twice for a specific instructor.
+     * 
+     * However, @cougargrades/types will initialize the Section.instructorNames field
+     * when this Section is first created. That means that checking if the
+     * Instructor is included in instructorNames works fine for the >=2nd instructor, 
+     * but WON'T work for the first instructor.
+     * 
+     * However, the first instructor is added when the Section doesn't exist, so we can
+     * check against that.
+     */
+
+    // If the section doesn't exist (first instructor) OR if the proposed instructor isn't included in Section.instructorNames (2nd and onward instructor)
+    if (!sectionSnap.exists || (Array.isArray(sectionData.instructorNames) && sectionData.instructorNames.findIndex(e => e.firstName === record.INSTR_FIRST_NAME && e.lastName === record.INSTR_LAST_NAME) === -1)) {
+
+      /**
+       * @cougargrades/types will initialize the Instructor.GPA field, 
+       * so we have to be careful not to overwrite our running total
+       * with the starting values of just one.
+       * 
+       * If the instructor already exists, we can confidently say that
+       * the GPA information inside of instructorData is the 
+       * running total and NOT the values of just this record.
+       */
+      if (instructorSnap.exists) {
+        // check if record has missing AVG
+        if (record.AVG_GPA !== null) {
+          // include in GPA
+          GPA.include(instructorData.GPA, record.AVG_GPA);
+
+          // stage our updates
+          instructorToUpdate = {
+            'GPA._average.n': instructorData.GPA._average.n,
+            'GPA._average.sum': instructorData.GPA._average.sum,
+            'GPA.average': Average.value(instructorData.GPA._average),
+            'GPA._standardDeviation.n': instructorData.GPA._standardDeviation.n,
+            'GPA._standardDeviation.delta': instructorData.GPA._standardDeviation.delta,
+            'GPA._standardDeviation.mean': instructorData.GPA._standardDeviation.mean,
+            'GPA._standardDeviation.M2': instructorData.GPA._standardDeviation.M2,
+            'GPA._standardDeviation.ddof': instructorData.GPA._standardDeviation.ddof,
+            'GPA.standardDeviation': StandardDeviation.value(instructorData.GPA._standardDeviation),
+            'GPA.maximum': instructorData.GPA._mmr.maximum,
+            'GPA.minimum': instructorData.GPA._mmr.minimum,
+            'GPA.range': instructorData.GPA._mmr.range,
+            ...instructorToUpdate
+          };
+        }
+      }
+    }
+
+    /**
+     * ----------------
+     * Update Enrollment stuff
+     * ----------------
+     */
+
+    // if the section doesn't exist, then we want to include this data in our Course calculation
+    if (!sectionSnap.exists) {
+
+      /**
+       * @cougargrades/types will initialize the Course.Enrollment field, 
+       * so we have to be careful not to overwrite our running total
+       * with the starting values of just one.
+       * 
+       * If the course already exists, we can confidently say that
+       * the enrollment information inside of courseData is the 
+       * running total and NOT the values of just this record.
+       */
+      if (courseSnap.exists) {
+
+        // get enrollment values for JUST THIS record and NOT the running total
+        const { totalA, totalB, totalC, totalD, totalF, totalS, totalNCR, totalW, totalEnrolled } = GDR.toCourse(record).enrollment;
+
+        // stage our updates
+        courseToUpdate = {
+          'enrollment.totalA': FieldValue.increment(totalA),
+          'enrollment.totalB': FieldValue.increment(totalB),
+          'enrollment.totalC': FieldValue.increment(totalC),
+          'enrollment.totalD': FieldValue.increment(totalD),
+          'enrollment.totalF': FieldValue.increment(totalF),
+          'enrollment.totalS': FieldValue.increment(totalS),
+          'enrollment.totalNCR': FieldValue.increment(totalNCR),
+          'enrollment.totalW': FieldValue.increment(totalW),
+          'enrollment.totalEnrolled': FieldValue.increment(totalEnrolled),
+          ...courseToUpdate
+        };
+      }
+    }
+
+    // Instructor
+    /**
+     * In premise, we want to include the Enrollment calculation if the provided 
+     * Instructor ISN'T part of the existing known instructors. We don't
+     * want to count a section twice for a specific instructor.
+     * 
+     * However, @cougargrades/types will initialize the Section.instructorNames field
+     * when this Section is first created. That means that checking if the
+     * Instructor is included in instructorNames works fine for the >=2nd instructor, 
+     * but WON'T work for the first instructor.
+     * 
+     * However, the first instructor is added when the Section doesn't exist, so we can
+     * check against that.
+     */
+
+    // If the section doesn't exist (first instructor) OR if the proposed instructor isn't included in Section.instructorNames (2nd and onward instructor)
+    if (!sectionSnap.exists || (Array.isArray(sectionData.instructorNames) && sectionData.instructorNames.findIndex(e => e.firstName === record.INSTR_FIRST_NAME && e.lastName === record.INSTR_LAST_NAME) === -1)) {
+
+      /**
+       * Now that we've determined that this section hasn't been submitted before with this instructor,
+       * we need to verify that this instructor isn't brand new.
+       * 
+       * If the instructor is brand new, then the enrollment field is already supplied when the instructor
+       * was initialized above.
+       * 
+       * TL;DR Brand new instructors shouldn't be incremented
+       * TL;DR Only old instructors should be incremented
+       */
+
+      if (instructorSnap.exists) {
+        // get enrollment values for JUST THIS record and NOT the running total
+        const { totalA, totalB, totalC, totalD, totalF, totalS, totalNCR, totalW, totalEnrolled } = GDR.toInstructor(record).enrollment;
+
+        // stage our updates
+        instructorToUpdate = {
+          'enrollment.totalA': FieldValue.increment(totalA),
+          'enrollment.totalB': FieldValue.increment(totalB),
+          'enrollment.totalC': FieldValue.increment(totalC),
+          'enrollment.totalD': FieldValue.increment(totalD),
+          'enrollment.totalF': FieldValue.increment(totalF),
+          'enrollment.totalS': FieldValue.increment(totalS),
+          'enrollment.totalNCR': FieldValue.increment(totalNCR),
+          'enrollment.totalW': FieldValue.increment(totalW),
+          'enrollment.totalEnrolled': FieldValue.increment(totalEnrolled),
+          ...instructorToUpdate
+        };
+      }
+    }
+
+    /**
+     * ----------------
+     * Update firstTaught/lastTaught stuff
+     * ----------------
+     */
+
+    courseToUpdate = {
+      firstTaught: Math.min(courseData.firstTaught, Util.termCode(record.TERM)),
+      lastTaught: Math.max(courseData.lastTaught, Util.termCode(record.TERM)),
+      ...courseToUpdate
+    };
+
+    instructorToUpdate = {
+      firstTaught: Math.min(instructorData.firstTaught, Util.termCode(record.TERM)),
+      lastTaught: Math.max(instructorData.lastTaught, Util.termCode(record.TERM)),
+      ...instructorToUpdate
+    };
+
+    /**
+     * ----------------
+     * Update department count stuff
+     * ----------------
+     */
+
+    // update department count, initialize count if does not exist
+    instructorToUpdate[`departments.${record.SUBJECT}`] =
+      (instructorData.departments as any)[record.SUBJECT] === undefined
+        ? 1
+        : FieldValue.increment(1);
+    
+    // update the core curriculum groups that exist
+    for(const coreCourseRef of coreCurriculumRefs) {
+      // check if it exists
+      if(coreCurriculumIdsThatExist.includes(coreCourseRef.id)) {
+        // update only groups that exist
+        await txn.update(coreCourseRef, {
+          sections: FieldValue.arrayUnion(sectionRef) as any,
+        });
+      }
+    }
+    
+    /**
+     * ----------------
+     * Execute transaction
+     * ----------------
+     */
+
+    await txn.update(courseRef, courseToUpdate);
+    await txn.update(sectionRef, sectionToUpdate);
+    await txn.update(instructorRef, instructorToUpdate);
+    await txn.update(groupRef, groupToUpdate);
+    //await txn.delete(selfRef);
+    return txn;
+  });
+
+  try {
+    await transaction;
+  } catch (err: any) {
+    console.error(`Error processing (${GDR.getSectionMoniker(record)}):`, err);
+  }
+}
+
+for(let i = 0; i < records.length; i++) {
+  await whenUploadQueueAdded(records[i]);
+  console.log(`Processed client-side: ${i+1} of ${records.length} (${(i+1/records.length*100).toFixed(1)})`)
+}
