@@ -4,7 +4,7 @@ on:
       environment:
         description: "What environment are we deploying to?"
         required: true
-        default: 'Production'
+        default: 'Preview'
         type: choice
         options: 
         - Production
@@ -12,7 +12,7 @@ on:
       batch_processing_mode:
         description: "How should the deployment scripts run?"
         required: true
-        default: 'Concurrent'
+        default: 'Sequential'
         type: choice
         options: 
         - Concurrent
