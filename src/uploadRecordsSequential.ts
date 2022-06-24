@@ -3,7 +3,7 @@ import { parseCSV } from './_bundleHelper.js';
 import { shuffle } from './_shuffle.js';
 import { Average, Course, GPA, GradeDistributionCSVRow as GDR, Group, Instructor, Section, StandardDeviation, Util } from '@cougargrades/types'
 import { GradeDistributionCSVRow } from '@cougargrades/types/dist/GradeDistributionCSVRow';
-import { getCoreCurriculumDocRefs } from './_dataHelper';
+import { getCoreCurriculumDocRefs } from './_dataHelper.js';
 
 const records = await parseCSV('tmp/test/edu.uh.grade_distribution/records.csv');
 
