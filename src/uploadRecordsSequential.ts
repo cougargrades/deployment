@@ -439,5 +439,5 @@ async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
 
 for(let i = 0; i < records.length; i++) {
   await whenUploadQueueAdded(records[i]);
-  console.log(`Processed client-side: ${i+1} of ${records.length} (${(i+1/records.length*100).toFixed(1)})`)
+  console.log(`Processed client-side: ${i+1} of ${records.length} (${((i+1)/records.length*100).toFixed(1)}%)`)
 }
