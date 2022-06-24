@@ -55,11 +55,11 @@ jobs:
         run: node build/deleteCollections.js
 
       - name: Upload records from CSV data (Concurrent)
-        if: ${{ (github.event.inputs.batch_processing_mode == 'Concurrent' }}
+        if: ${{ github.event.inputs.batch_processing_mode == 'Concurrent' }}
         run: node build/uploadRecords.js
       
       - name: Upload records from CSV data (Sequential)
-        if: ${{ (github.event.inputs.batch_processing_mode == 'Sequential' }}
+        if: ${{ github.event.inputs.batch_processing_mode == 'Sequential' }}
         run: node build/uploadRecordsSequential.js
 
       - name: Execute patchfiles
