@@ -2,9 +2,14 @@ import { AsyncSemaphore } from '@cougargrades/types'
 import { getPatchFiles } from './_bundleHelper.js'
 import { processPatchfile, SEQUENTIAL_PROCESSING } from './_firebaseHelper.js'
 
-const [files, maxPhase] = await getPatchFiles('tmp/test/io.cougargrades.publicdata.patchfile')
+const justFirstPhase = process.argv.includes('--just-first-phase');
 
-for(let i = 0; i <= maxPhase; i++) {
+const [files, maxFilePhase] = await getPatchFiles('tmp/test/io.cougargrades.publicdata.patchfile');
+
+const startPhase = justFirstPhase ? 0 : 1;
+const maxPhase = justFirstPhase ? 0 : maxFilePhase;
+
+for(let i = startPhase; i <= maxPhase; i++) {
   console.log(`phase ${i} queue starting...`);
   console.time(`phase ${i} time`);
   const filesForCurrentPhase = files.filter(e => e.split('/').reverse()[0].startsWith(`patch-${i}`));
