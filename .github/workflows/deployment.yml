@@ -9,6 +9,14 @@ on:
         options: 
         - Production
         - Preview
+      selected_bundle:
+        description: "Which bundle are we deploying?"
+        required: true
+        default: 'publicdata-bundle.tar.gz'
+        type: choice
+        options: 
+        - publicdata-bundle.tar.gz
+        - publicdata-testbundle-summer2020.tar.gz
       batch_processing_mode:
         description: "How should the deployment scripts run?"
         required: true
@@ -31,6 +39,7 @@ jobs:
     env:
       FIREBASE_SERVICE_ACCOUNT: ${{ (github.event.inputs.environment == 'Production' && secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT) || secrets.FIREBASE_PREVIEW_SERVICE_ACCOUNT }}
       BATCH_PROCESSING_MODE: ${{ github.event.inputs.batch_processing_mode }}
+      SELECTED_BUNDLE: ${{ github.event.inputs.selected_bundle }}
     steps:
       - name: Checkout code
         uses: actions/checkout@master
