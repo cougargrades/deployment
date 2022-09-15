@@ -17,6 +17,7 @@ on:
         options: 
         - publicdata-bundle.tar.gz
         - publicdata-testbundle-summer2020.tar.gz
+        - publicdata-testbundle-year2021.tar.gz
       batch_processing_mode:
         description: "How should the deployment scripts run?"
         required: true
