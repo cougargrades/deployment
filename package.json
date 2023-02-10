@@ -28,7 +28,8 @@
     "typescript": "^4.5.4"
   },
   "dependencies": {
-    "@cougargrades/types": "^0.0.91",
+    "@cougargrades/publicdata": "^1.0.0-20230210162517",
+    "@cougargrades/types": "^0.0.92",
     "csv-parse": "^5.0.4",
     "firebase-admin": "^10.0.1",
     "glob": "^7.2.0",
