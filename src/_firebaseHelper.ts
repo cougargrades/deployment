@@ -6,7 +6,10 @@ import { executePatchFile } from '@cougargrades/types/dist/PatchfileUtil.js'
 
 export const fakeRequire = (filePath: string): any => JSON.parse(fs.readFileSync(new URL(filePath, import.meta.url), { encoding: 'utf8' }))
 
-export const SEQUENTIAL_PROCESSING = process.env.BATCH_PROCESSING_MODE !== undefined && process.env.BATCH_PROCESSING_MODE.trim() === 'Sequential';
+const makeInt = (x: string | undefined, defaultValue: number) => x === undefined || isNaN(parseInt(x)) ? defaultValue : parseInt(x)
+
+//export const SEQUENTIAL_PROCESSING = process.env.BATCH_PROCESSING_MODE !== undefined && process.env.BATCH_PROCESSING_MODE.trim() === 'Sequential';
+export const CONCURRENT_WORKER_LIMIT: number = makeInt(process.env.CONCURRENT_WORKER_LIMIT, 1)
 
 const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
   ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
@@ -37,7 +40,7 @@ export async function deleteCollection(collectionPath: string): Promise<void> {
     .collection(collectionPath)
     .listDocuments()
 
-  const workerLimit = SEQUENTIAL_PROCESSING ? 1 : 3;
+  const workerLimit = 8;
   const semaphore = new AsyncSemaphore(workerLimit);
 
   for (let i = 0; i < documents.length; i++) {

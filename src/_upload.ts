@@ -1,24 +1,10 @@
-import { FieldValue, firebase } from './_firebaseHelper.js';
-import { parseCSV } from './_bundleHelper.js';
-import { shuffle } from './_shuffle.js';
 import { Average, Course, GPA, GradeDistributionCSVRow as GDR, Group, Instructor, Section, StandardDeviation, Util } from '@cougargrades/types'
 import { GradeDistributionCSVRow } from '@cougargrades/types/dist/GradeDistributionCSVRow';
+import { FieldValue, firebase } from './_firebaseHelper.js';
 import { getCoreCurriculumDocRefs } from './_dataHelper.js';
 
-const records = await parseCSV('tmp/test/edu.uh.grade_distribution/records.csv');
-
-if(records.length === 0) {
-  console.error('This CSV file is empty! Exiting.')
-  process.exit(1);
-}
-
-// mutates the records array in-place
-// shuffles the records so that we prevent similar courses/sections from being adjacent
-shuffle(records);
-console.log('CSV records have been parsed and shuffled');
-
 // Pasted from @cougargrades/api > whenUploadQueueAdded
-async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
+export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
   const db = firebase.firestore();
 
   const transaction = db.runTransaction(async (txn) => {
@@ -435,9 +421,4 @@ async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
   } catch (err: any) {
     console.error(`Error processing (${GDR.getSectionMoniker(record)}):`, err);
   }
-}
-
-for(let i = 0; i < records.length; i++) {
-  await whenUploadQueueAdded(records[i]);
-  console.log(`Processed client-side: ${i+1} of ${records.length} (${((i+1)/records.length*100).toFixed(1)}%)`)
 }

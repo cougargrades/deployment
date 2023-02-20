@@ -18,14 +18,19 @@ on:
         - publicdata-bundle.tar.gz
         - publicdata-testbundle-summer2020.tar.gz
         - publicdata-testbundle-year2021.tar.gz
-      batch_processing_mode:
-        description: "How should the deployment scripts run?"
+      concurrent_worker_limit:
+        description: "How many workers can be ran simultaneously?"
         required: true
-        default: 'Sequential'
-        type: choice
-        options: 
-        - Concurrent
-        - Sequential
+        default: '1'
+        type: 'string'
+      # batch_processing_mode:
+      #   description: "How should the deployment scripts run?"
+      #   required: true
+      #   default: 'Sequential'
+      #   type: choice
+      #   options: 
+      #   - Concurrent
+      #   - Sequential
 
 name: Deployment
 
@@ -39,7 +44,8 @@ jobs:
     timeout-minutes: 4320
     env:
       FIREBASE_SERVICE_ACCOUNT: ${{ (github.event.inputs.environment == 'Production' && secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT) || secrets.FIREBASE_PREVIEW_SERVICE_ACCOUNT }}
-      BATCH_PROCESSING_MODE: ${{ github.event.inputs.batch_processing_mode }}
+      #BATCH_PROCESSING_MODE: ${{ github.event.inputs.batch_processing_mode }}
+      CONCURRENT_WORKER_LIMIT: ${{ github.event.inputs.concurrent_worker_limit }}
       SELECTED_BUNDLE: ${{ github.event.inputs.selected_bundle }}
     steps:
       - name: Checkout code
@@ -67,13 +73,13 @@ jobs:
       - name: Execute first phase of patchfiles
         run: node build/executePatchfiles.js --just-first-phase
 
-      - name: Upload records from CSV data (Concurrent)
-        if: ${{ github.event.inputs.batch_processing_mode == 'Concurrent' }}
-        run: node build/uploadRecords.js
+      # - name: Upload records from CSV data (Concurrent)
+      #   if: ${{ github.event.inputs.batch_processing_mode == 'Concurrent' }}
+      #   run: node build/uploadRecords.js
       
-      - name: Upload records from CSV data (Sequential)
-        if: ${{ github.event.inputs.batch_processing_mode == 'Sequential' }}
-        run: node build/uploadRecordsSequential.js
+      - name: Upload records from CSV data
+        #if: ${{ github.event.inputs.batch_processing_mode == 'Sequential' }}
+        run: node build/uploadRecords.js
 
       - name: Execute remaining patchfiles
         run: node build/executePatchfiles.js

@@ -1,6 +1,6 @@
 import { AsyncSemaphore } from '@cougargrades/types'
 import { getPatchFiles } from './_bundleHelper.js'
-import { processPatchfile, SEQUENTIAL_PROCESSING } from './_firebaseHelper.js'
+import { processPatchfile, CONCURRENT_WORKER_LIMIT } from './_firebaseHelper.js'
 
 const justFirstPhase = process.argv.includes('--just-first-phase');
 
@@ -14,7 +14,7 @@ for(let i = startPhase; i <= maxPhase; i++) {
   console.time(`phase ${i} time`);
   const filesForCurrentPhase = files.filter(e => e.split('/').reverse()[0].startsWith(`patch-${i}`));
 
-  const workerLimit = SEQUENTIAL_PROCESSING ? 1 : 2;
+  const workerLimit = CONCURRENT_WORKER_LIMIT;
   const semaphore = new AsyncSemaphore(workerLimit);
 
   for(let file of filesForCurrentPhase) {
