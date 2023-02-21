@@ -1,19 +1,19 @@
 on: 
   workflow_dispatch:
     inputs:
-      environment:
-        description: "What GitHub environment are we deploying to?"
-        required: true
-        default: 'Preview'
-        type: environment
       # environment:
-      #   description: "What environment are we deploying to?"
+      #   description: "What GitHub environment are we deploying to?"
       #   required: true
       #   default: 'Preview'
-      #   type: choice
-      #   options: 
-      #   - Production
-      #   - Preview
+      #   type: environment
+      environment:
+        description: "What environment are we deploying to?"
+        required: true
+        default: 'Preview'
+        type: choice
+        options: 
+        - Production
+        - Preview
       selected_bundle:
         description: "Which bundle are we deploying?"
         required: true
@@ -44,9 +44,9 @@ jobs:
     name: Deployment
     runs-on: self-hosted
     #environment: ${{ inputs.environment }}
-    environment:
-      name: ${{ inputs.environment }}
-      url: ${{ inputs.environment == 'Production' && 'https://cougargrades.io/' || 'https://next.cougargrades.io/' }}
+    # environment:
+    #   name: ${{ inputs.environment }}
+    #   url: ${{ inputs.environment == 'Production' && 'https://cougargrades.io/' || 'https://next.cougargrades.io/' }}
     # 24 hours in minutes
     #timeout-minutes: 1440
     # 72 hours in minutes
