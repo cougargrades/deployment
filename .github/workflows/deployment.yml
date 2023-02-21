@@ -1,18 +1,19 @@
 on: 
   workflow_dispatch:
     inputs:
-      environment2:
-        description: "What GH environment are we deploying to?"
-        required: true
-        type: environment
       environment:
-        description: "What environment are we deploying to?"
+        description: "What GitHub environment are we deploying to?"
         required: true
         default: 'Preview'
-        type: choice
-        options: 
-        - Production
-        - Preview
+        type: environment
+      # environment:
+      #   description: "What environment are we deploying to?"
+      #   required: true
+      #   default: 'Preview'
+      #   type: choice
+      #   options: 
+      #   - Production
+      #   - Preview
       selected_bundle:
         description: "Which bundle are we deploying?"
         required: true
@@ -52,8 +53,12 @@ jobs:
       CONCURRENT_WORKER_LIMIT: ${{ github.event.inputs.concurrent_worker_limit }}
       SELECTED_BUNDLE: ${{ github.event.inputs.selected_bundle }}
     steps:
-      - name: Test
-        run: echo ${{ inputs.environment2 }} 
+      - name: We're running in the Preview Environment
+        if: ${{ inputs.environment == 'Preview' }} 
+        run: echo ${{ inputs.environment }}
+      - name: We're running in the Production Environment
+        if: ${{ inputs.environment == 'Production' }} 
+        run: echo ${{ inputs.environment }}
       - name: Checkout code
         uses: actions/checkout@master
       - name: Setup Node.js
