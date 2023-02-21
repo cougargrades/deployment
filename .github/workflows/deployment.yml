@@ -1,6 +1,10 @@
 on: 
   workflow_dispatch:
     inputs:
+      environment2:
+        description: "What GH environment are we deploying to?"
+        required: true
+        type: environment
       environment:
         description: "What environment are we deploying to?"
         required: true
