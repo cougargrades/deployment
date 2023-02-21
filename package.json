@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@cougargrades/publicdata": "^1.0.0-20230213022826",
-    "@cougargrades/types": "^0.0.96",
+    "@cougargrades/types": "^0.0.97",
     "chalk": "^5.2.0",
     "csv-parse": "^5.0.4",
     "firebase-admin": "^10.0.1",
