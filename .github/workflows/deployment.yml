@@ -43,6 +43,10 @@ jobs:
   deployment:
     name: Deployment
     runs-on: self-hosted
+    #environment: ${{ inputs.environment }}
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.environment == 'Production' && 'https://cougargrades.io/' || 'https://next.cougargrades.io/' }}
     # 24 hours in minutes
     #timeout-minutes: 1440
     # 72 hours in minutes
@@ -54,15 +58,17 @@ jobs:
       SELECTED_BUNDLE: ${{ github.event.inputs.selected_bundle }}
     steps:
       - name: We're running in the Preview Environment
-        if: ${{ inputs.environment == 'Preview' }} 
+        id: 'environment_check_preview'
+        if: ${{ inputs.environment == 'Preview' }}
         run: echo ${{ inputs.environment }}
       - name: We're running in the Production Environment
-        if: ${{ inputs.environment == 'Production' }} 
+        id: 'environment_check_production'
+        if: ${{ inputs.environment == 'Production' }}
         run: echo ${{ inputs.environment }}
       - name: Checkout code
         uses: actions/checkout@master
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
