@@ -52,6 +52,8 @@ jobs:
       CONCURRENT_WORKER_LIMIT: ${{ github.event.inputs.concurrent_worker_limit }}
       SELECTED_BUNDLE: ${{ github.event.inputs.selected_bundle }}
     steps:
+      - name: Test
+        run: echo ${{ inputs.environment2 }} 
       - name: Checkout code
         uses: actions/checkout@master
       - name: Setup Node.js
