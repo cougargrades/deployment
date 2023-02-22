@@ -1,4 +1,5 @@
-import { AsyncSemaphore } from '@cougargrades/types'
+//import { AsyncSemaphore } from '@cougargrades/types'
+import { Sema } from 'async-sema'
 import { getPatchFiles } from './_bundleHelper.js'
 import { processPatchfile, CONCURRENT_WORKER_LIMIT } from './_firebaseHelper.js'
 
@@ -15,12 +16,19 @@ for(let i = startPhase; i <= maxPhase; i++) {
   const filesForCurrentPhase = files.filter(e => e.split('/').reverse()[0].startsWith(`patch-${i}`));
 
   const workerLimit = CONCURRENT_WORKER_LIMIT;
-  const semaphore = new AsyncSemaphore(workerLimit);
+  const semaphore = new Sema(workerLimit, { capacity: filesForCurrentPhase.length });
 
-  for(let file of filesForCurrentPhase) {
-    await semaphore.withLockRunAndForget(async () => await processPatchfile(file));
+  async function task(file: string) {
+    await semaphore.acquire()
+    try {
+      await processPatchfile(file)
+    } finally {
+      semaphore.release();
+    }
   }
-  await semaphore.awaitTerminate();
+
+  await Promise.all(filesForCurrentPhase.map(task));
+  
   console.log(`phase ${i} queue done!`);
   console.timeEnd(`phase ${i} time`);
 }

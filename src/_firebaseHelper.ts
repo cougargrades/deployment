@@ -3,6 +3,7 @@ import { promisify } from 'util'
 import admin from 'firebase-admin'
 import { AsyncSemaphore, is } from '@cougargrades/types'
 import { executePatchFile } from '@cougargrades/types/dist/PatchfileUtil.js'
+import { Sema, RateLimit } from 'async-sema'
 
 export const fakeRequire = (filePath: string): any => JSON.parse(fs.readFileSync(new URL(filePath, import.meta.url), { encoding: 'utf8' }))
 
@@ -40,17 +41,23 @@ export async function deleteCollection(collectionPath: string): Promise<void> {
     .collection(collectionPath)
     .listDocuments()
 
-  const workerLimit = 8;
-  const semaphore = new AsyncSemaphore(workerLimit);
+  const workerLimit = 32;
+  const semaphore = new Sema(workerLimit, { capacity: documents.length });
 
-  for (let i = 0; i < documents.length; i++) {
-    let ref = documents[i]
-    await semaphore.withLockRunAndForget(async () => {
+  async function task(ref: typeof documents[0]) {
+    await semaphore.acquire()
+    try {
       await ref.delete()
+      const i = documents.length - semaphore.nrWaiting()
       console.log(`Deleted ${ref.path} (${i + 1} of ${documents.length})`)
-    });
+    }
+    finally {
+      semaphore.release()
+    }
   }
-  await semaphore.awaitTerminate();
+
+  await Promise.all(documents.map(task))
+  
   console.log(`End of documents (${documents.length} deleted)`)
 }
 
