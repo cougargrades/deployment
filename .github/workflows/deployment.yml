@@ -84,19 +84,25 @@ jobs:
       - name: Download latest public data bundle
         run: node build/downloadBundle.js
 
+      - name: Build local copy of the database
+        run: node build/createMockDatabase.js
+
       - name: Delete existing collections
         run: node build/deleteCollections.js
 
-      - name: Execute first phase of patchfiles
-        run: node build/executePatchfiles.js --just-first-phase
+      - name: Upload pre-processed local database to the Cloud
+        run: node build/uploadMockDatabase.js
+
+      # - name: Execute first phase of patchfiles
+      #   run: node build/executePatchfiles.js --just-first-phase
 
       # - name: Upload records from CSV data (Concurrent)
       #   if: ${{ github.event.inputs.batch_processing_mode == 'Concurrent' }}
       #   run: node build/uploadRecords.js
       
-      - name: Upload records from CSV data
-        #if: ${{ github.event.inputs.batch_processing_mode == 'Sequential' }}
-        run: node build/uploadRecords.js
+      # - name: Upload records from CSV data
+      #   #if: ${{ github.event.inputs.batch_processing_mode == 'Sequential' }}
+      #   run: node build/uploadRecords.js
 
-      - name: Execute remaining patchfiles
-        run: node build/executePatchfiles.js
+      # - name: Execute remaining patchfiles
+      #   run: node build/executePatchfiles.js
