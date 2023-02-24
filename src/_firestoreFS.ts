@@ -177,7 +177,12 @@ function getPathsForPredicate(value: unknown, predicate: (value: unknown) => boo
     }
   }
   else {
-    return []
+    if (predicate(value)) {
+      return [`${path}`]
+    }
+    else {
+      return []
+    }
   }
 }
 
