@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@cougargrades/publicdata": "^1.0.0-20230213022826",
-    "@cougargrades/types": "^0.0.97",
+    "@cougargrades/types": "^0.0.99",
     "async-sema": "^3.1.1",
     "chalk": "^5.2.0",
     "csv-parse": "^5.0.4",

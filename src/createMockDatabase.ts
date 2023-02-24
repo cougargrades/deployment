@@ -1,44 +1,50 @@
+import { getPatchFiles, parseCSV } from './_bundleHelper.js';
+import { shuffle } from './_shuffle.js';
+import { whenUploadQueueAdded } from './_mockDatabase.js'
+import { reset } from './_firestoreFS.js';
+import { processPatchfile } from './_patchfileFS.js';
+// import { GradeDistributionCSVRow } from '@cougargrades/types/dist/GradeDistributionCSVRow';
+// import { Sema, RateLimit } from 'async-sema'
+// import chalk from 'chalk'
 
-import { firebase } from './_firebaseHelper.js'
-import _ from 'lodash'
-import { FS_DOC_REF_SENTINEL, isFSDocumentReference, synthesizeFirestoreData } from './_firestoreFS.js'
+const records = await parseCSV('tmp/test/edu.uh.grade_distribution/records.csv');
+const [files, maxFilePhase] = await getPatchFiles('tmp/test/io.cougargrades.publicdata.patchfile');
 
-// const db = firebase.firestore();
-
-// const docRef = db.doc('catalog/ENGL 1304')
-
-// console.log(docRef)
-
-const sample = {
-  _id: 'string',
-  _path: 'string',
-  department: 'string',
-  catalogNumber: 'string',
-  description: 'string',
-  GPA: {
-    gpa: 2.0
-  },
-  sections: [
-    {
-      __meta__: FS_DOC_REF_SENTINEL,
-      __path__: '/catalog/FAKE 1234',
-    },
-    {
-      __meta__: FS_DOC_REF_SENTINEL,
-      __path__: '/catalog/FAKE 1234',
-    },
-  ],
-  instructors: [
-    {
-      __meta__: FS_DOC_REF_SENTINEL,
-      __path__: '/catalog/FAKE 1234',
-    },
-    {
-      __meta__: FS_DOC_REF_SENTINEL,
-      __path__: '/catalog/FAKE 1234',
-    },
-  ],
+if(records.length === 0) {
+  console.error('This CSV file is empty! Exiting.')
+  process.exit(1);
 }
 
-const data = synthesizeFirestoreData(sample)
-console.log('data: ', data)
+// mutates the records array in-place
+// shuffles the records so that we prevent similar courses/sections from being adjacent
+shuffle(records);
+console.log('CSV records have been parsed and shuffled');
+
+await reset()
+
+// Do `patch-0` first
+for (let file of files.filter(e => e.split('/').reverse()[0].startsWith(`patch-0`))) {
+  await processPatchfile(file)
+}
+
+// Do `records.csv`
+for (let i = 0; i < records.length; i++) {
+  await whenUploadQueueAdded(records[i]);
+  console.log(`Processed client-side: ${i+1} of ${records.length} (${((i+1)/records.length*100).toFixed(1)}%)`)
+}
+
+console.log(`Finished processing records (${records.length} processed)`)
+
+// Do remaining patchfiles
+for(let i = 1; i <= maxFilePhase; i++) {
+  console.log(`phase ${i} queue starting...`);
+  console.time(`phase ${i} time`);
+  const filesForCurrentPhase = files.filter(e => e.split('/').reverse()[0].startsWith(`patch-${i}`));
+
+  for(let file of filesForCurrentPhase) {
+    await processPatchfile(file)
+  }
+  
+  console.log(`phase ${i} queue done!`);
+  console.timeEnd(`phase ${i} time`);
+}

@@ -4,10 +4,15 @@ import _ from 'lodash'
 import { NestedKeyOf } from './_keyof.js'
 import { firebase } from './_firebaseHelper.js';
 
-const BASE_DIR = './firebaseFS/'
+const BASE_DIR = './tmp/firebaseFS/'
+
+export async function reset(): Promise<void> {
+  await fs.rm(BASE_DIR, { recursive: true, force: true })
+}
 
 export async function exists(documentPath: string): Promise<boolean> {
   try {
+    await _prepDirectory(documentPath)
     await fs.access(`${BASE_DIR}${documentPath}.json`)
     return true
   }
@@ -34,6 +39,15 @@ export async function set<T>(documentPath: string, data: T): Promise<void> {
  * This does not have feature parity with the Firestore `update()` function.
  * Things like FieldValue and updating by the path aren't supported.
  * You'll have to use the standalone functions below.
+ * 
+ * This is quite literally just:
+ * ```
+ * await set<T>(documentPath, {
+    ...existingData,
+    ...data,
+  })
+ * ```
+ * 
  * @param documentPath 
  * @param data 
  * @returns 
@@ -45,6 +59,18 @@ export async function merge<T>(documentPath: string, data: Partial<T>): Promise<
     ...existingData,
     ...data,
   })
+}
+
+/**
+ * Due to my inability to implement `NestedKeyOf` correctly, 
+ * this doesn't offer any type safety and should be used very cautiously.
+ */
+export async function mergeByPaths<T extends object>(documentPath: string, dictionary: Partial<Record<NestedKeyOf<T>, any>>): Promise<void> {
+  const data = await get<T>(documentPath)
+  for (let key of Object.keys(dictionary) as [NestedKeyOf<T>]) {
+    _.set(data, key, dictionary[key])
+  }
+  return await set(documentPath, data)
 }
 
 /**
@@ -100,9 +126,17 @@ export async function arrayUnion<T extends object>(documentPath: string, unions:
 
 export const FS_DOC_REF_SENTINEL = 'firebase.firestore.DocumentReference'
 
-export interface FSDocumentReference {
+export interface FSDocumentReference<T = any> {
   __meta__: typeof FS_DOC_REF_SENTINEL
-  __path__: `/${string}/${string}` | `${string}/${string}`;
+  //__path__: `/${string}/${string}` | `${string}/${string}`;
+  __path__: string;
+}
+
+export function docRef<T = any>(documentPath: string): FSDocumentReference {
+  return {
+    __meta__: FS_DOC_REF_SENTINEL,
+    __path__: documentPath,
+  }
 }
 
 export function isObject(obj: unknown): obj is Record<string, unknown> {
