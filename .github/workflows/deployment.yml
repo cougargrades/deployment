@@ -23,6 +23,13 @@ on:
         - publicdata-bundle.tar.gz
         - publicdata-testbundle-summer2020.tar.gz
         - publicdata-testbundle-year2021.tar.gz
+      selected_mock_database:
+        description: "Which mock database are we deploying?"
+        required: true
+        default: 'database.tar.gz'
+        type: choice
+        options: 
+        - database.tar.gz
       concurrent_worker_limit:
         description: "How many workers can be ran simultaneously?"
         required: true
@@ -56,6 +63,7 @@ jobs:
       #BATCH_PROCESSING_MODE: ${{ github.event.inputs.batch_processing_mode }}
       CONCURRENT_WORKER_LIMIT: ${{ github.event.inputs.concurrent_worker_limit }}
       SELECTED_BUNDLE: ${{ github.event.inputs.selected_bundle }}
+      SELECTED_MOCK_DATABASE: ${{ github.event.inputs.selected_mock_database }}
     steps:
       - name: We're running in the Preview Environment
         id: 'environment_check_preview'
@@ -84,8 +92,8 @@ jobs:
       - name: Download latest public data bundle
         run: node build/downloadBundle.js
 
-      - name: Build local copy of the database
-        run: node build/createMockDatabase.js
+      # - name: Build local copy of the database
+      #   run: node build/createMockDatabase.js
 
       - name: Delete existing collections
         run: node build/deleteCollections.js

@@ -59,7 +59,7 @@ jobs:
             echo "::set-output name=calculatedyear::$CURRENTYEAR"
           fi
       - name: Send mail
-        uses: cougargrades/action-send-mail@v4
+        uses: cougargrades/action-send-mail@master
         with:
           # Required mail server address:
           server_address: smtp.gmail.com
