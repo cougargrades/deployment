@@ -238,5 +238,5 @@ export function synthesizeFirestoreData(data: any): any {
 
 export async function listDocuments(collectionName: string): Promise<string[]> {
   const files = await fs.readdir(`${BASE_DIR}${collectionName}`);
-  return files.map(file => `${collectionName}/${path.basename(file, 'json')}`)
+  return files.map(file => `${collectionName}/${path.basename(file, '.json')}`)
 }
