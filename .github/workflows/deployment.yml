@@ -95,10 +95,10 @@ jobs:
       # - name: Build local copy of the database
       #   run: node build/createMockDatabase.js
 
-      - name: Delete database from Cloud
+      - name: Delete database from the Cloud
         run: node build/deleteCollections.js
 
-      - name: Upload pre-processed local database to the Cloud
+      - name: Upload database to the Cloud
         run: node build/uploadMockDatabase.js
 
       # - name: Execute first phase of patchfiles
