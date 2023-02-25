@@ -89,13 +89,13 @@ jobs:
       - name: Test Firebase access
         run: node build/testAccess.js
 
-      - name: Download latest public data bundle
+      - name: Download latest database copy
         run: node build/downloadBundle.js
 
       # - name: Build local copy of the database
       #   run: node build/createMockDatabase.js
 
-      - name: Delete existing collections
+      - name: Delete database from Cloud
         run: node build/deleteCollections.js
 
       - name: Upload pre-processed local database to the Cloud
