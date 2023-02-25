@@ -25,6 +25,7 @@
     "@types/node": "^18.0.0",
     "@types/rimraf": "^3.0.2",
     "@types/tar": "^6.1.1",
+    "@types/terminal-kit": "^2.5.1",
     "tslib": "^2.3.1",
     "typescript": "^4.5.4"
   },
@@ -40,6 +41,7 @@
     "lodash": "^4.17.21",
     "node-fetch": "^3.1.1",
     "rimraf": "^3.0.2",
-    "tar": "^6.1.11"
+    "tar": "^6.1.11",
+    "terminal-kit": "^3.0.0"
   }
 }

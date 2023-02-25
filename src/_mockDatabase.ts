@@ -2,11 +2,12 @@ import { Average, Course, GPA, GradeDistributionCSVRow as GDR, Group, Instructor
 import { GradeDistributionCSVRow } from '@cougargrades/types/dist/GradeDistributionCSVRow';
 import { FieldValue, firebase } from './_firebaseHelper.js';
 import { getCoreCurriculumDocPaths } from './_dataHelper.js';
-import { arrayUnion, docRef, exists, get, increment, merge, mergeByPaths, set } from './_firestoreFS.js';
+import { arrayUnion, arrayUnionComplex, docRef, exists, get, increment, merge, mergeByPaths, set } from './_firestoreFS.js';
 import { NestedKeyOf } from './_keyof.js';
 
 // Pasted from @cougargrades/api > whenUploadQueueAdded
 export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
+  //console.time('\tall')
   // create all references
   const coursePath = `catalog/${GDR.getCourseMoniker(record)}`;
   const sectionPath = `sections/${GDR.getSectionMoniker(record)}`
@@ -15,6 +16,7 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
   const coreCurriculumPaths = getCoreCurriculumDocPaths(GDR.getCourseMoniker(record));
 
   // perform all reads
+  //console.time('\tcheck existence')
   const courseExists = await exists(coursePath);
   const sectionExists = await exists(sectionPath);
   const instructorExists = await exists(instructorPath);
@@ -29,6 +31,7 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
     // if it exists, save the ID
     if(snapExists) coreCurriculumPathsThatExist.push(coreCoursePath);
   }
+  //console.timeEnd('\tcheck existence')
 
   // denoted variables to cache the result from the snapshot
   let courseData: Course;
@@ -59,6 +62,8 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
    * fields later.
    * ----------------
    */
+
+  //console.time('\tset defaults')
 
   // if course doesn't exist
   if (!courseExists) {
@@ -104,12 +109,16 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
     //groupData = groupSnap.data() as Group;
   }
 
+  //console.timeEnd('\tset defaults')
+
   /**
    * ----------------
    * Now that defaults are set, we're going to update all the references set between each document.
    * These references can't be set by @cougargrades/types (see above why), so we have to do it here.
    * ----------------
    */
+
+  //console.time('\tupdate references')
 
   // update course to include include instructors
   await arrayUnion<Course>(coursePath, {
@@ -120,7 +129,7 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
 
   // update section to include the instructor submitted
   // arrayUnion prevents a duplicate
-  await arrayUnion<Section>(sectionPath, {
+  await arrayUnionComplex<Section>(sectionPath, {
     instructorNames: [{
       firstName: record.INSTR_FIRST_NAME,
       lastName: record.INSTR_LAST_NAME,
@@ -138,12 +147,16 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
     sections: [ docRef(sectionPath) ],
   })
 
+  //console.timeEnd('\tupdate references')
+
 
   /**
    * ----------------
    * Update GPA stuff
    * ----------------
    */
+
+  //console.time('\tupdate course GPA')
 
   // Course
   // if the section doesn't exist, then we want to include this data in our Course calculation
@@ -192,6 +205,8 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
     }
   }
 
+  //console.timeEnd('\tupdate course GPA')
+
   // Instructor
   /**
    * In premise, we want to include the GPA calculation if the provided 
@@ -207,6 +222,7 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
    * check against that.
    */
 
+  //console.time('\tupdate instructor GPA')
   // If the section doesn't exist (first instructor) OR if the proposed instructor isn't included in Section.instructorNames (2nd and onward instructor)
   if (!sectionExists || (Array.isArray(sectionData.instructorNames) && sectionData.instructorNames.findIndex(e => e.firstName === record.INSTR_FIRST_NAME && e.lastName === record.INSTR_LAST_NAME) === -1)) {
 
@@ -245,12 +261,16 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
     }
   }
 
+  //console.timeEnd('\tupdate instructor GPA')
+
 
   /**
    * ----------------
    * Update Enrollment stuff
    * ----------------
    */
+
+  //console.time('\tupdate course Enrollment')
 
   // if the section doesn't exist, then we want to include this data in our Course calculation
   if (!sectionExists) {
@@ -284,6 +304,8 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
     }
   }
 
+  //console.timeEnd('\tupdate course Enrollment')
+
   // Instructor
   /**
    * In premise, we want to include the Enrollment calculation if the provided 
@@ -299,6 +321,8 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
    * check against that.
    */
 
+  //console.time('\tupdate instructor Enrollment')
+  
   // If the section doesn't exist (first instructor) OR if the proposed instructor isn't included in Section.instructorNames (2nd and onward instructor)
   if (!sectionExists || (Array.isArray(sectionData.instructorNames) && sectionData.instructorNames.findIndex(e => e.firstName === record.INSTR_FIRST_NAME && e.lastName === record.INSTR_LAST_NAME) === -1)) {
 
@@ -332,11 +356,15 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
     }
   }
 
+  //console.timeEnd('\tupdate instructor Enrollment')
+
   /**
    * ----------------
    * Update firstTaught/lastTaught stuff
    * ----------------
    */
+
+  //console.time('\tupdate firstTaught/lastTaught + departments count')
 
   await merge<Course>(coursePath, {
     firstTaught: Math.min(courseData.firstTaught, Util.termCode(record.TERM)),
@@ -360,6 +388,10 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
     [`departments.${record.SUBJECT}`]: 1
   })
 
+  //console.timeEnd('\tupdate firstTaught/lastTaught + departments count')
+
+  //console.time('\tupdate references (core curr)')
+
   for(const coreGroupPath of coreCurriculumPathsThatExist) {
     await arrayUnion<Group>(coreGroupPath, {
       sections: [ docRef(sectionPath) ]
@@ -373,5 +405,8 @@ export async function whenUploadQueueAdded(record: GradeDistributionCSVRow) {
     })
   }
 
+  //console.timeEnd('\tupdate references (core curr)')
+
   // Are we done? I think we're done
+  //console.timeEnd('\tall')
 }

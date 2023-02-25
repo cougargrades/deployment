@@ -1,7 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import _ from 'lodash'
-import { NestedKeyOf } from './_keyof.js'
+import { NestedKeyOf, Primitive } from './_keyof.js'
 import { firebase } from './_firebaseHelper.js';
 
 const BASE_DIR = './tmp/firebaseFS/'
@@ -102,7 +102,35 @@ export async function increment<T extends object>(documentPath: string, incremen
  * @param increments 
  * @returns 
  */
-export async function arrayUnion<T extends object>(documentPath: string, unions: Partial<Record<NestedKeyOf<T>, Array<any>>>): Promise<void> {
+export async function arrayUnion<T extends object>(documentPath: string, unions: Partial<Record<NestedKeyOf<T>, Array<Primitive>>>): Promise<void> {
+  const data = await get<T>(documentPath)
+  for (let key of Object.keys(unions) as [NestedKeyOf<T>]) {
+    const value = _.get(data, key)
+    const delta = unions[key];
+    // If the user provided something useful
+    if (Array.isArray(delta)) {
+      // If the stored value has something useful
+      if(Array.isArray(value)) {
+        // check if the union involves only primitives, because then we can do a much more performant union
+        const result = Array.from(new Set([...value, ...delta]));
+          _.set(data, key, result)
+      }
+      // Initialize if not already set
+      else {
+        _.set(data, key, delta)
+      }
+    }
+  }
+  return await set(documentPath, data)
+}
+
+/**
+ * Accepts an object where the keys are dot-delimited paths to an object's properties, and the values are the numeric delta/change to make to that document.
+ * @param documentPath 
+ * @param increments 
+ * @returns 
+ */
+export async function arrayUnionComplex<T extends object>(documentPath: string, unions: Partial<Record<NestedKeyOf<T>, Array<any>>>): Promise<void> {
   const data = await get<T>(documentPath)
   for (let key of Object.keys(unions) as [NestedKeyOf<T>]) {
     const value = _.get(data, key)
@@ -126,31 +154,27 @@ export async function arrayUnion<T extends object>(documentPath: string, unions:
 
 export const FS_DOC_REF_SENTINEL = 'firebase.firestore.DocumentReference'
 
-export interface FSDocumentReference<T = any> {
-  __meta__: typeof FS_DOC_REF_SENTINEL
-  //__path__: `/${string}/${string}` | `${string}/${string}`;
-  __path__: string;
-}
+export type FSDocumentReference<T = any> = `FSDR://${string}`
 
 export function docRef<T = any>(documentPath: string): FSDocumentReference {
-  return {
-    __meta__: FS_DOC_REF_SENTINEL,
-    __path__: documentPath,
-  }
+  return `FSDR://${documentPath}`
 }
 
 export function isObject(obj: unknown): obj is Record<string, unknown> {
   return typeof obj === 'object' && obj !== null && !Array.isArray(obj)
 }
 
+export function isPrimitive(value: unknown): value is Primitive {
+  return value === null || ['string', 'number', 'bigint', 'boolean', 'undefined', 'symbol'].includes(typeof value)
+}
+
+export function isPrimitiveArray(value: unknown[]): value is Primitive[] {
+  //return value.filter(isPrimitive).length === value.length
+  return value.findIndex(v => !isPrimitive(v)) === -1
+}
+
 export function isFSDocumentReference(obj: unknown): obj is FSDocumentReference {
-  return isObject(obj)
-    && '__meta__' in obj
-    && '__path__' in obj
-    && obj['__meta__'] === FS_DOC_REF_SENTINEL
-    && typeof obj['__path__'] === 'string'
-    && obj['__path__'].includes('/')
-    && Object.keys(obj).length === 2
+  return typeof obj === 'string' && obj.startsWith('FSDR://')
 }
 
 function getPathsForPredicate(value: unknown, predicate: (value: unknown) => boolean, path: string = ''): string[] {
@@ -187,7 +211,7 @@ function getPathsForPredicate(value: unknown, predicate: (value: unknown) => boo
 }
 
 function synthesizeFirestoreReference(ref: FSDocumentReference) {
-  return firebase.firestore().doc(ref.__path__)
+  return firebase.firestore().doc(ref.substring('FSDR://'.length))
 }
 
 /**

@@ -18,10 +18,9 @@ export async function processPatchfile(file: string): Promise<void> {
     const contents = await fs.readFile(file, { encoding: 'utf8' });
     const decoded = JSON.parse(contents);
     if(is.Patchfile(decoded)) {
-      decoded
       //console.log(`- started executing ${shortName}`)
       await executePatchFile(decoded);
-      console.log(`- finished executing ${shortName}`)
+      //console.log(`- finished executing ${shortName}`)
     }
   }
   catch(err) {
