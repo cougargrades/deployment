@@ -72,11 +72,10 @@ jobs:
         uses: azure/cli@v2
         env:
           ACS_CONNECTION_STRING: ${{secrets.ACS_CONNECTION_STRING}}
-          SEMESTER: ${{ steps.computed.outputs.SEMESTER }}
           MAIL_PLAINTEXT_BODY: |
             Dear Public Information Officer,
             
-            Pursuant to the Texas Public Information Act, I am requesting the grade distributions by percent and/or letter grade, for every class and instructor (at both the undergraduate and graduate levels) for the ${{ env.SEMESTER }} semester at the University of Houston (University Park / main campus) and associated satellite campuses (such as UH Sugar Land).
+            Pursuant to the Texas Public Information Act, I am requesting the grade distributions by percent and/or letter grade, for every class and instructor (at both the undergraduate and graduate levels) for the ${{ steps.computed.outputs.SEMESTER }} semester at the University of Houston (University Park / main campus) and associated satellite campuses (such as UH Sugar Land).
             Please ensure the documents are FERPA compliant.
             I request that the information is in CSV format, and in digital format.
             
