@@ -66,12 +66,12 @@ jobs:
         id: computed
         run: |
           # TODO: calculate dynamically
-          echo "::set-output name=semester::${{ github.event.inputs.season }} ${{ github.event.inputs.year }}"
+          echo "SEMESTER=${{ github.event.inputs.season }} ${{ github.event.inputs.year }}" >> "$GITHUB_OUTPUT"
       - name: Send email
         uses: azure/cli@v2
         env:
           ACS_CONNECTION_STRING: ${{secrets.ACS_CONNECTION_STRING}}
-          SEMESTER: ${{ steps.computed.outputs.semester }}
+          SEMESTER: ${{ steps.computed.outputs.SEMESTER }}
           MAIL_PLAINTEXT_BODY: |
             Dear Public Information Officer,
             
@@ -98,5 +98,5 @@ jobs:
           azcliversion: 2.73.0
           inlineScript: |
             az extension add --name communication
-            chmod +x $GITHUB_WORKSPACE/.github/workflows/foia.sh
-            $GITHUB_WORKSPACE/.github/workflows/foia.sh
+            chmod +x ./.github/workflows/foia.sh
+            ./.github/workflows/foia.sh
