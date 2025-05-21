@@ -42,28 +42,29 @@ jobs:
     name: Send Data Email
     runs-on: ubuntu-latest
     steps:
-      - name: Get current date and timestamp
-        id: timestamp
-        run: | 
-          CURRENTMONTH=$(date +'%m')
-          CURRENTYEAR=$(date +'%Y')
-          LASTYEAR=$(date --date='-1 year' +'%Y')
-          echo "::set-output name=datestamp::$(date +'%Y-%m-%d')"
-          echo "::set-output name=currentmonth::$CURRENTMONTH"
-          echo "::set-output name=currentyear::$(date +'%Y')"
-          echo "::set-output name=lastyear::$(date --date='-1 year' +'%Y')"
+      # - name: Get current date and timestamp
+      #   id: timestamp
+      #   run: | 
+      #     CURRENTMONTH=$(date +'%m')
+      #     CURRENTYEAR=$(date +'%Y')
+      #     LASTYEAR=$(date --date='-1 year' +'%Y')
+      #     echo "::set-output name=datestamp::$(date +'%Y-%m-%d')"
+      #     echo "::set-output name=currentmonth::$CURRENTMONTH"
+      #     echo "::set-output name=currentyear::$(date +'%Y')"
+      #     echo "::set-output name=lastyear::$(date --date='-1 year' +'%Y')"
 
-          if [ "${{ github.event.inputs.season }}" = "Fall" ]; then
-            if [ "$CURRENTMONTH" = "12" ]; then
-              echo "::set-output name=calculatedyear::$CURRENTYEAR"
-            else
-              echo "::set-output name=calculatedyear::$LASTYEAR"
-            fi
-          else
-            echo "::set-output name=calculatedyear::$CURRENTYEAR"
-          fi
+      #     if [ "${{ github.event.inputs.season }}" = "Fall" ]; then
+      #       if [ "$CURRENTMONTH" = "12" ]; then
+      #         echo "::set-output name=calculatedyear::$CURRENTYEAR"
+      #       else
+      #         echo "::set-output name=calculatedyear::$LASTYEAR"
+      #       fi
+      #     else
+      #       echo "::set-output name=calculatedyear::$CURRENTYEAR"
+      #     fi
       - name: Compute variables
         id: computed
+        #if: github.event.schedule != '30 5 * * 1,3'
         run: |
           # TODO: calculate dynamically
           echo "SEMESTER=${{ github.event.inputs.season }} ${{ github.event.inputs.year }}" >> "$GITHUB_OUTPUT"
@@ -98,5 +99,5 @@ jobs:
           azcliversion: 2.73.0
           inlineScript: |
             az extension add --name communication
-            chmod +x ./.github/workflows/foia.sh
-            ./.github/workflows/foia.sh
+            chmod +x $GITHUB_WORKSPACE/foia.sh
+            $GITHUB_WORKSPACE/foia.sh
