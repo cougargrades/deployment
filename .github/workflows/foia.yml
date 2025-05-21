@@ -24,11 +24,11 @@ on:
       #   type: environment
       #   required: true
   schedule:
-    # end of Spring semester
+    # end of Spring semester (May 30)
     - cron: '0 0 30 5 *'
-    # end of Summer semester
+    # end of Summer semester (August 30)
     - cron: '0 0 30 8 *'
-    # end of Fall semester
+    # end of Fall semester (December 30)
     - cron: '0 0 30 12 *'
     # for testing only
     #- cron: '*/5 * * * *'
