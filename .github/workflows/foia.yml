@@ -31,7 +31,7 @@ on:
     # end of Fall semester
     - cron: '0 0 30 12 *'
     # for testing only
-    - cron: '0 * * * *'
+    - cron: '*/5 * * * *'
     # * is a special character in YAML so you have to quote this string
     #- cron:  '*/10 * * * *'
 
@@ -65,7 +65,7 @@ jobs:
             echo "SEMESTER=Fall $LASTYEAR" >> "$GITHUB_OUTPUT"
           fi
           # Scheduled: For testing
-          if [ "${{ github.event.schedule }}" = "0 * * * *" ]; then
+          if [ "${{ github.event.schedule }}" = "*/5 * * * *" ]; then
             echo "SEMESTER=Winter $LASTYEAR" >> "$GITHUB_OUTPUT"
           fi
       - name: Send email using Azure Communication Services
