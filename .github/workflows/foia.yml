@@ -98,6 +98,8 @@ jobs:
         with:
           azcliversion: 2.73.0
           inlineScript: |
+            ls
+            pwd
             az extension add --name communication
             chmod +x $GITHUB_WORKSPACE/foia.sh
             $GITHUB_WORKSPACE/foia.sh
