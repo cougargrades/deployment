@@ -49,7 +49,7 @@ name: Deployment
 jobs:
   deployment:
     name: Deployment
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     #environment: ${{ inputs.environment }}
     # environment:
     #   name: ${{ inputs.environment }}
