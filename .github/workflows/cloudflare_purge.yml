@@ -1,0 +1,34 @@
+on: 
+  workflow_dispatch:
+    inputs:
+      # environment:
+      #   description: "What GitHub environment are we deploying to?"
+      #   required: true
+      #   default: 'Preview'
+      #   type: environment
+
+name: Cloudflare Cache Purge
+
+jobs:
+  deployment:
+    name: Cloudflare Cache Purge
+    runs-on: ubuntu-latest
+    steps:
+      # https://github.com/NathanVaughn/actions-cloudflare-purge
+      - name: Purge cache
+        uses: nathanvaughn/actions-cloudflare-purge@c92f0124230056ef0d82f2fc3a5099b94d17f916
+        with:
+            cf_zone: ${{ secrets.CLOUDFLARE_ZONE }}
+            cf_auth: ${{ secrets.CLOUDFLARE_AUTH_KEY }}
+            # files: |
+            #   https://nathanv.me/assets/images/profile.png
+            #   https://nathanv.me/assets/images/favicons/apple-touch-icon.png
+            # tags: |
+            #   some-tag
+            #   another-tag
+            hosts: |
+              cougargrades.io
+            # prefixes: |
+            #   nathanv.me/assets/
+            #   blog.nathanv.me/assets
+      
