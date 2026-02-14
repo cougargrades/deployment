@@ -86,6 +86,7 @@ jobs:
         run: |
           mkdir -p ./tmp
           wget --verbose https://github.com/cougargrades/publicdata/releases/latest/download/$SELECTED_BUNDLE -O ./tmp/database.tar.gz
+          mkdir -p ./tmp/db
           tar xvf ./tmp/database.tar.gz --directory ./tmp/db
       - name: Purge previous database
         run: |
