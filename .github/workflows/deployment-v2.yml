@@ -1,0 +1,95 @@
+on: 
+  workflow_dispatch:
+    inputs:
+      # environment:
+      #   description: "What GitHub environment are we deploying to?"
+      #   required: true
+      #   default: 'Preview'
+      #   type: environment
+      environment:
+        description: "What environment are we deploying to?"
+        required: true
+        default: 'preview'
+        type: choice
+        options: 
+        - production
+        - preview
+      selected_bundle:
+        description: "Which bundle are we deploying?"
+        required: true
+        default: 'publicdata-bundle.tar.gz'
+        type: choice
+        options: 
+        - publicdata-bundle.tar.gz
+        - publicdata-testbundle-summer2020.tar.gz
+        - publicdata-testbundle-year2021.tar.gz
+      selected_mock_database:
+        description: "Which mock database are we deploying?"
+        required: true
+        default: 'database.tar.gz'
+        type: choice
+        options: 
+        - database.tar.gz
+      # concurrent_worker_limit:
+      #   description: "How many workers can be ran simultaneously?"
+      #   required: true
+      #   default: '1'
+      #   type: 'string'
+      # batch_processing_mode:
+      #   description: "How should the deployment scripts run?"
+      #   required: true
+      #   default: 'Sequential'
+      #   type: choice
+      #   options: 
+      #   - Concurrent
+      #   - Sequential
+
+name: Deployment
+
+jobs:
+  deployment:
+    name: Deployment
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ (github.event.inputs.environment == 'Production' && secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT) || secrets.FIREBASE_PREVIEW_SERVICE_ACCOUNT }}
+      #BATCH_PROCESSING_MODE: ${{ github.event.inputs.batch_processing_mode }}
+      CONCURRENT_WORKER_LIMIT: ${{ github.event.inputs.concurrent_worker_limit }}
+      SELECTED_BUNDLE: ${{ github.event.inputs.selected_bundle }}
+      SELECTED_MOCK_DATABASE: ${{ github.event.inputs.selected_mock_database }}
+    steps:
+      - name: We're running in the Preview Environment
+        id: 'environment_check_preview'
+        if: ${{ inputs.environment == 'preview' }}
+        run: echo ${{ inputs.environment }}
+      - name: We're running in the Production Environment
+        id: 'environment_check_production'
+        if: ${{ inputs.environment == 'production' }}
+        run: echo ${{ inputs.environment }}
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Setup Rclone
+        uses: AnimMouse/setup-rclone@v1.12.0
+        with:
+          rclone_config: |
+            [r2]
+            type = s3
+            provider = Cloudflare
+            access_key_id = ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+            secret_access_key = ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+            endpoint = ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
+            no_check_bucket = true
+          disable_base64: true
+      - name: Test Rclone/R2 access
+        run: |
+          rclone tree r2:
+      - name: Download + Extract latest database copy
+        run: |
+          mkdir -p ./tmp
+          wget --verbose https://github.com/cougargrades/publicdata/releases/latest/download/$SELECTED_BUNDLE -O ./tmp/database.tar.gz
+          tar xvf ./tmp/database.tar.gz --directory ./tmp/db
+      - name: Purge previous database
+        run: |
+          rclone --verbose --progress --transfers 16 purge r2:cougargrades-data/${{ inputs.environment }}/
+      - name: Upload database
+        run: |
+          rclone --verbose --progress --transfers 16 copy ./tmp/db/ r2:cougargrades-data/${{ inputs.environment }}/
