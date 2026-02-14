@@ -81,7 +81,7 @@ jobs:
           disable_base64: true
       - name: Test Rclone/R2 access
         run: |
-          rclone tree r2:
+          rclone --verbose tree --level 1 r2:cougargrades-data/
       - name: Download + Extract latest database copy
         run: |
           mkdir -p ./tmp
