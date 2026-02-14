@@ -85,12 +85,12 @@ jobs:
       - name: Download + Extract latest database copy
         run: |
           mkdir -p ./tmp
-          wget --verbose https://github.com/cougargrades/publicdata/releases/latest/download/$SELECTED_MOCK_DATABASE -O ./tmp/database.tar.gz
+          wget https://github.com/cougargrades/publicdata/releases/latest/download/$SELECTED_MOCK_DATABASE -O ./tmp/database.tar.gz
           mkdir -p ./tmp/db
           tar xvf ./tmp/database.tar.gz --directory ./tmp/db
       - name: Purge previous database
         run: |
-          rclone --verbose --progress --transfers 16 purge r2:cougargrades-data/${{ inputs.environment }}/
+          rclone --verbose purge r2:cougargrades-data/${{ inputs.environment }}/
       - name: Upload database
         run: |
-          rclone --verbose --progress --transfers 16 copy ./tmp/db/ r2:cougargrades-data/${{ inputs.environment }}/
+          rclone --verbose copy ./tmp/db/ r2:cougargrades-data/${{ inputs.environment }}/
