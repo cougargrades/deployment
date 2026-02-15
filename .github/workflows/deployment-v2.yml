@@ -44,7 +44,7 @@ on:
       #   - Concurrent
       #   - Sequential
 
-name: Deployment
+name: Deployment (V2)
 
 jobs:
   deployment:
@@ -90,7 +90,7 @@ jobs:
           tar xvf ./tmp/database.tar.gz --directory ./tmp/db
       - name: Purge previous database
         run: |
-          rclone --verbose purge r2:cougargrades-data/${{ inputs.environment }}/
+          rclone purge --checkers 32 r2:cougargrades-data/${{ inputs.environment }}/
       - name: Upload database
         run: |
-          rclone --verbose copy ./tmp/db/ r2:cougargrades-data/${{ inputs.environment }}/
+          rclone copy --transfers 32 ./tmp/db/ r2:cougargrades-data/${{ inputs.environment }}/
