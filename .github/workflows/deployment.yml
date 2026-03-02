@@ -12,8 +12,8 @@ on:
         default: 'Preview'
         type: choice
         options: 
-        - Production
-        - Preview
+        - production
+        - preview
       selected_bundle:
         description: "Which bundle are we deploying?"
         required: true
@@ -59,7 +59,7 @@ jobs:
     # 72 hours in minutes
     timeout-minutes: 4320
     env:
-      FIREBASE_SERVICE_ACCOUNT: ${{ (github.event.inputs.environment == 'Production' && secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT) || secrets.FIREBASE_PREVIEW_SERVICE_ACCOUNT }}
+      FIREBASE_SERVICE_ACCOUNT: ${{ (github.event.inputs.environment == 'production' && secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT) || secrets.FIREBASE_PREVIEW_SERVICE_ACCOUNT }}
       #BATCH_PROCESSING_MODE: ${{ github.event.inputs.batch_processing_mode }}
       CONCURRENT_WORKER_LIMIT: ${{ github.event.inputs.concurrent_worker_limit }}
       SELECTED_BUNDLE: ${{ github.event.inputs.selected_bundle }}
@@ -67,14 +67,29 @@ jobs:
     steps:
       - name: We're running in the Preview Environment
         id: 'environment_check_preview'
-        if: ${{ inputs.environment == 'Preview' }}
+        if: ${{ inputs.environment == 'preview' }}
         run: echo ${{ inputs.environment }}
       - name: We're running in the Production Environment
         id: 'environment_check_production'
-        if: ${{ inputs.environment == 'Production' }}
+        if: ${{ inputs.environment == 'production' }}
         run: echo ${{ inputs.environment }}
       - name: Checkout code
         uses: actions/checkout@master
+      - name: Setup Rclone
+        uses: AnimMouse/setup-rclone@v1.12.0
+        with:
+          rclone_config: |
+            [r2]
+            type = s3
+            provider = Cloudflare
+            access_key_id = ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+            secret_access_key = ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+            endpoint = ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
+            no_check_bucket = true
+          disable_base64: true
+      - name: Test Rclone/R2 access
+        run: |
+          rclone --verbose tree --level 1 r2:cougargrades-data/
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -91,6 +106,10 @@ jobs:
 
       - name: Download latest database copy
         run: node build/downloadBundle.js
+
+      - name: Upload parts of the data bundle to R2
+        run: |
+          rclone sync --check-first --transfers 32 --checksum --retries 10 --retries-sleep 60s ./tmp/test/io.cougargrades.searchable r2:cougargrades-data/${{ inputs.environment }}/io.cougargrades.searchable
 
       # - name: Build local copy of the database
       #   run: node build/createMockDatabase.js
